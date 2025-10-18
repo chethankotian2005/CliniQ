@@ -1,0 +1,1071 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Portal - Choose Your Hospital{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h2 class="mb-3">
+                        <i class="fas fa-hospital-alt"></i>
+                        Welcome to CliniQ Patient Portal
+                    </h2>
+                    <p class="lead">Book appointments, chat with our AI assistant, and manage your healthcare journey</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Quick Access
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-xl col-lg col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-primary text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-calendar-plus fa-2x text-primary mb-2"></i>
+                                    <h6>Book Appointment</h6>
+                                    <p class="small text-muted">Schedule a new appointment</p>
+                                    <a href="#hospitals-container" class="btn btn-primary btn-sm">
+                                        Book Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl col-lg col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-success text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-video fa-2x text-success mb-2"></i>
+                                    <h6>Teleappointment</h6>
+                                    <p class="small text-muted">Video consultation from home</p>
+                                    <a href="{% url 'patients:teleappointment_booking' %}" class="btn btn-success btn-sm">
+                                        Book Video Call
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl col-lg col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-info text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                                    <h6>Check Queue</h6>
+                                    <p class="small text-muted">View your queue status</p>
+                                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#checkModal">
+                                        Check Status
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl col-lg col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-warning text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-history fa-2x text-warning mb-2"></i>
+                                    <h6>My History</h6>
+                                    <p class="small text-muted">View past appointments</p>
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#historyModal">
+                                        View History
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl col-lg col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-danger text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                                    <h6>Emergency</h6>
+                                    <p class="small text-muted">Need immediate help?</p>
+                                    <button class="btn btn-danger btn-sm" onclick="showEmergencyInfo()">
+                                        Emergency
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Hospital Selection Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Select Your Preferred Hospital
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Location Services -->
+                    <div class="alert alert-info">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <i class="fas fa-location-arrow"></i>
+                                <strong>Find nearby hospitals</strong> - Enable location services to see hospitals sorted by distance
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-outline-primary btn-sm" onclick="findNearbyHospitals()">
+                                    <i class="fas fa-search-location"></i>
+                                    Find Nearby
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hospitals Grid -->
+                    <div id="hospitals-container" class="row">
+                        {% for hospital in hospitals %}
+                        <div class="col-md-6 mb-4 hospital-card" data-hospital-id="{{ hospital.id }}">
+                            <div class="card h-100 hospital-item">
+                                <div class="card-header bg-light">
+                                    <div class="row align-items-center">
+                                        <div class="col-8">
+                                            <h5 class="mb-0 text-primary">{{ hospital.name }}</h5>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="rating">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= hospital.rating|floatformat:0 %}
+                                                        <i class="fas fa-star text-warning"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star text-warning"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <small class="text-muted">({{ hospital.total_reviews }})</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if hospital.images.all %}
+                                        <img src="{{ hospital.images.first.image.url }}" class="img-fluid rounded mb-3" alt="{{ hospital.name }}" style="height: 150px; width: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                        <div class="hospital-placeholder" data-hospital-id="{{ hospital.id }}" style="display: none;">
+                                            <img class="img-fluid rounded mb-3" alt="{{ hospital.name }}" style="height: 150px; width: 100%; object-fit: cover;" loading="lazy">
+                                        </div>
+                                    {% else %}
+                                        <div class="hospital-placeholder" data-hospital-id="{{ hospital.id }}">
+                                            <img class="img-fluid rounded mb-3" alt="{{ hospital.name }}" style="height: 150px; width: 100%; object-fit: cover;" loading="lazy">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <p class="text-muted mb-2">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        {{ hospital.address }}, {{ hospital.city }}
+                                    </p>
+                                    
+                                    <p class="text-muted mb-2">
+                                        <i class="fas fa-phone"></i>
+                                        {{ hospital.phone }}
+                                    </p>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-success">
+                                                <i class="fas fa-building"></i>
+                                                {{ hospital.get_departments_count }} Departments
+                                            </small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-info">
+                                                <i class="fas fa-bed"></i>
+                                                {{ hospital.total_beds }} Beds
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Features -->
+                                    <div class="mb-3">
+                                        {% if hospital.emergency_services %}
+                                            <span class="badge bg-danger me-1">Emergency</span>
+                                        {% endif %}
+                                        {% if hospital.is_24_hours %}
+                                            <span class="badge bg-success me-1">24/7</span>
+                                        {% endif %}
+                                        {% if hospital.has_parking %}
+                                            <span class="badge bg-info me-1">Parking</span>
+                                        {% endif %}
+                                        {% if hospital.has_pharmacy %}
+                                            <span class="badge bg-warning me-1">Pharmacy</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="text-muted small">{{ hospital.description|truncatewords:15 }}</p>
+                                    
+                                    <div class="distance-info" style="display: none;">
+                                        <p class="text-primary mb-2">
+                                            <i class="fas fa-route"></i>
+                                            <span class="distance-text"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <a href="{% url 'patients:hospital_detail' hospital.id %}" class="btn btn-outline-info btn-sm w-100">
+                                                <i class="fas fa-info-circle"></i>
+                                                View Details
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="{% url 'patients:hospital_booking' hospital.id %}" class="btn btn-primary btn-sm w-100">
+                                                <i class="fas fa-calendar-plus"></i>
+                                                Book Now
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-5">
+                                <i class="fas fa-hospital fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No hospitals available</h5>
+                                <p class="text-muted">Please contact support for assistance.</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Chatbot Section -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot"></i>
+                        Medical AI Assistant
+                    </h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="alert alert-success">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Need help?</strong> Ask our AI assistant about symptoms, departments, or booking process!
+                    </div>
+                    
+                    <!-- Chat Container -->
+                    <div id="chat-container" class="border rounded p-3 mb-3 flex-grow-1" style="height: 300px; overflow-y: auto; background: #f8f9fa;">
+                        <div class="chat-message bot-message">
+                            <div class="message-content">
+                                <i class="fas fa-robot text-success"></i>
+                                <strong>AI Assistant:</strong> Hello! I'm here to help you with medical questions and appointment booking. How can I assist you today?
+                            </div>
+                            <small class="text-muted">Just now</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="input-group">
+                        <input type="text" id="chat-input" class="form-control" placeholder="Ask about symptoms, departments, or booking..." maxlength="500">
+                        <button class="btn btn-success" id="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Questions -->
+                    <div class="mt-2">
+                        <small class="text-muted">Quick questions:</small>
+                        <div class="mt-1">
+                            <button class="btn btn-outline-secondary btn-sm me-1 mb-1" onclick="askQuickQuestion('What department should I visit for chest pain?')">
+                                Chest Pain
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm me-1 mb-1" onclick="askQuickQuestion('How do I book an appointment?')">
+                                How to Book
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm me-1 mb-1" onclick="askQuickQuestion('What are your emergency services?')">
+                                Emergency
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Finding nearby hospitals...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Check Status Modal -->
+<div class="modal fade" id="checkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Check Appointments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="check-phone" class="form-label">Phone number</label>
+                    <input id="check-phone" class="form-control" placeholder="Enter phone number">
+                </div>
+                <div id="check-results"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="check-submit">Check</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">My Appointment History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your phone number to view appointment history.</p>
+                <div class="input-group mb-3">
+                    <input id="history-phone" class="form-control" placeholder="Phone number">
+                    <button id="history-load" class="btn btn-outline-primary">Load</button>
+                </div>
+                <div id="history-results"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm cancellation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this appointment?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" id="cancel-confirm-btn" class="btn btn-danger">Yes, cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div id="portalToasts"></div>
+</div>
+
+<script>
+let conversationHistory = [];
+
+// Hospital photos function - Specific building photos for each hospital
+function assignSpecificHospitalPhotos() {
+    // Specific hospital building photos mapped by hospital name
+    const hospitalPhotoMap = {
+        'City General Hospital': {
+            url: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400&h=200&fit=crop&crop=center',
+            description: 'City General Hospital main building exterior'
+        },
+        'Metro Medical Center': {
+            url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop&crop=center',
+            description: 'Metro Medical Center building complex'
+        },
+        'Sunrise Specialty Hospital': {
+            url: 'https://images.unsplash.com/photo-1596541223130-5d31a73fb6c6?w=400&h=200&fit=crop&crop=center',
+            description: 'Sunrise Specialty Hospital building facade'
+        },
+        'Community Care Hospital': {
+            url: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=200&fit=crop&crop=center',
+            description: 'Community Care Hospital building exterior'
+        }
+    };
+    
+    // Default building photos for any other hospitals
+    const defaultHospitalBuildings = [
+        'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400&h=200&fit=crop&crop=center',
+        'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccf?w=400&h=200&fit=crop&crop=center',
+        'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&h=200&fit=crop&crop=center',
+        'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=200&fit=crop&crop=center'
+    ];
+    
+    // Get all hospital cards and assign specific building photos
+    const hospitalCards = document.querySelectorAll('.hospital-card');
+    
+    hospitalCards.forEach((card, index) => {
+        const hospitalName = card.querySelector('.text-primary').textContent.trim();
+        const placeholder = card.querySelector('.hospital-placeholder');
+        const img = placeholder ? placeholder.querySelector('img') : null;
+        
+        if (img) {
+            // Check if we have a specific building photo for this hospital
+            if (hospitalPhotoMap[hospitalName]) {
+                img.src = hospitalPhotoMap[hospitalName].url;
+                img.alt = hospitalPhotoMap[hospitalName].description;
+            } else {
+                // Use default building photo based on index
+                const photoIndex = index % defaultHospitalBuildings.length;
+                img.src = defaultHospitalBuildings[photoIndex];
+                img.alt = `${hospitalName} - Hospital building exterior`;
+            }
+            
+            // Add error handling
+            img.onerror = function() {
+                this.src = 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&h=200&fit=crop&crop=center';
+                this.alt = `${hospitalName} - Hospital building`;
+            };
+        }
+    });
+}
+
+// Chat functionality
+function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    input.value = '';
+    
+    // Add to conversation history
+    conversationHistory.push({role: 'user', content: message});
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    // Send to backend
+    fetch('/patients/api/chatbot/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            history: conversationHistory
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideTypingIndicator();
+        
+        if (data.success) {
+            // Add bot response
+            addMessageToChat('bot', data.response);
+            conversationHistory.push({role: 'assistant', content: data.response});
+            
+            // Show emergency alert if detected
+            if (data.emergency_detected) {
+                showEmergencyAlert();
+            }
+            
+            // Show department recommendations if available
+            if (data.department_recommendations) {
+                showDepartmentRecommendations(data.department_recommendations);
+            }
+        } else {
+            addMessageToChat('bot', data.response || 'Sorry, I encountered an error. Please try again.');
+        }
+    })
+    .catch(error => {
+        hideTypingIndicator();
+        addMessageToChat('bot', 'I apologize, but I\'m having connection issues. Please try again.');
+        console.error('Chat error:', error);
+    });
+}
+
+function addMessageToChat(sender, message) {
+    const chatContainer = document.getElementById('chat-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}-message mb-2`;
+    
+    const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    if (sender === 'user') {
+        messageDiv.innerHTML = `
+            <div class="message-content text-end">
+                <strong>You:</strong> ${message}
+                <i class="fas fa-user text-primary ms-1"></i>
+            </div>
+            <small class="text-muted text-end d-block">${timestamp}</small>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <i class="fas fa-robot text-success"></i>
+                <strong>AI Assistant:</strong> ${message}
+            </div>
+            <small class="text-muted">${timestamp}</small>
+        `;
+    }
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function showTypingIndicator() {
+    const chatContainer = document.getElementById('chat-container');
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typing-indicator';
+    typingDiv.className = 'chat-message bot-message mb-2';
+    typingDiv.innerHTML = `
+        <div class="message-content">
+            <i class="fas fa-robot text-success"></i>
+            <strong>AI Assistant:</strong> 
+            <span class="typing-dots">
+                <span>.</span><span>.</span><span>.</span>
+            </span>
+        </div>
+    `;
+    
+    chatContainer.appendChild(typingDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+}
+
+function askQuickQuestion(question) {
+    document.getElementById('chat-input').value = question;
+    sendMessage();
+}
+
+function showEmergencyAlert() {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger mt-2';
+    alertDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Emergency Detected!</strong> If this is a medical emergency, please call emergency services immediately or visit the nearest emergency department.
+    `;
+    
+    document.getElementById('chat-container').appendChild(alertDiv);
+}
+
+function showDepartmentRecommendations(recommendations) {
+    const recDiv = document.createElement('div');
+    recDiv.className = 'alert alert-info mt-2';
+    
+    let html = '<i class="fas fa-stethoscope"></i> <strong>Department Recommendations:</strong><ul class="mb-0 mt-2">';
+    recommendations.forEach(rec => {
+        html += `<li><strong>${rec.department}:</strong> ${rec.reason}</li>`;
+    });
+    html += '</ul>';
+    
+    recDiv.innerHTML = html;
+    document.getElementById('chat-container').appendChild(recDiv);
+}
+
+// Location services
+function findNearbyHospitals() {
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by this browser.');
+        return;
+    }
+    
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            fetch('/patients/api/nearby-hospitals/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lng
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingModal.hide();
+                if (data.success) {
+                    updateHospitalsWithDistance(data.hospitals);
+                } else {
+                    alert('Error getting nearby hospitals: ' + data.message);
+                }
+            })
+            .catch(error => {
+                loadingModal.hide();
+                console.error('Error:', error);
+                alert('Error finding nearby hospitals. Please try again.');
+            });
+        },
+        function(error) {
+            loadingModal.hide();
+            alert('Error getting your location: ' + error.message);
+        }
+    );
+}
+
+function updateHospitalsWithDistance(hospitals) {
+    // Sort and update hospital cards with distance info
+    const container = document.getElementById('hospitals-container');
+    const hospitalCards = Array.from(container.children);
+    
+    hospitals.forEach(hospital => {
+        const card = hospitalCards.find(card => 
+            card.getAttribute('data-hospital-id') === hospital.id
+        );
+        
+        if (card && hospital.distance !== null) {
+            const distanceInfo = card.querySelector('.distance-info');
+            const distanceText = card.querySelector('.distance-text');
+            
+            distanceText.textContent = `${hospital.distance} km away`;
+            distanceInfo.style.display = 'block';
+            
+            // Store distance for sorting
+            card.setAttribute('data-distance', hospital.distance);
+        }
+    });
+    
+    // Sort cards by distance
+    hospitalCards.sort((a, b) => {
+        const distA = parseFloat(a.getAttribute('data-distance')) || 999;
+        const distB = parseFloat(b.getAttribute('data-distance')) || 999;
+        return distA - distB;
+    });
+    
+    // Reorder cards in DOM
+    hospitalCards.forEach(card => container.appendChild(card));
+}
+
+// Chat input enter key
+document.getElementById('chat-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+// CSS for typing animation
+const style = document.createElement('style');
+style.textContent = `
+    .typing-dots span {
+        animation: typing 1.4s infinite;
+    }
+    .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes typing {
+        0%, 60%, 100% { opacity: 0; }
+        30% { opacity: 1; }
+    }
+    
+    .chat-message {
+        margin-bottom: 0.5rem;
+    }
+    
+    .user-message .message-content {
+        background: #e3f2fd;
+        padding: 8px 12px;
+        border-radius: 15px;
+        display: inline-block;
+        max-width: 80%;
+        margin-left: auto;
+    }
+    
+    .bot-message .message-content {
+        background: #f1f8e9;
+        padding: 8px 12px;
+        border-radius: 15px;
+        display: inline-block;
+        max-width: 80%;
+    }
+`;
+document.head.appendChild(style);
+// Quick Access: open check modal (button uses data-bs-toggle) but keep function for compatibility
+function checkMyAppointments() {
+    const modalEl = document.getElementById('checkModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+// Modal-driven check flow: run when 'Check' is clicked inside the modal
+document.addEventListener('DOMContentLoaded', function() {
+    const checkSubmit = document.getElementById('check-submit');
+    if (checkSubmit) {
+        checkSubmit.addEventListener('click', function() {
+            const phone = document.getElementById('check-phone').value.trim();
+            const results = document.getElementById('check-results');
+            results.innerHTML = '';
+            if (!phone) { results.innerHTML = '<div class="alert alert-warning">Please enter a phone number</div>'; return; }
+
+            results.innerHTML = '<div class="text-center">Checking...</div>';
+
+            fetch('/patients/api/check-patient/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify({ phone_number: phone })
+            })
+            .then(async response => {
+                const text = await response.text();
+                try { return JSON.parse(text); } catch (e) { return { success: false, message: text || 'Unexpected response' }; }
+            })
+            .then(data => {
+                results.innerHTML = '';
+                if (!data.exists || !data.patients || data.patients.length === 0) {
+                    results.innerHTML = '<div class="alert alert-info">No patients found with this phone number.</div>';
+                    return;
+                }
+
+                data.patients.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'card mb-2';
+                    const has = p.has_active_booking;
+                    card.innerHTML = `
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${p.name}</strong><br>
+                                <small class="text-muted">${p.phone_number}</small>
+                                ${has && p.latest_booking ? `<div><small class="text-muted">Booking: ${p.latest_booking.department} - ${p.latest_booking.status}</small></div>` : ''}
+                            </div>
+                            <div>
+                                ${has && p.latest_booking ? `<button class="btn btn-sm btn-outline-primary me-1" data-booking-id="${p.latest_booking.id}" onclick="viewQueue(${p.latest_booking.id})">View Queue</button>
+                                <button class="btn btn-sm btn-danger" data-booking-id="${p.latest_booking.id}" onclick="cancelFromModal(${p.latest_booking.id}, this)">Cancel</button>` : `<button class="btn btn-sm btn-secondary" onclick="alert('No active booking for this patient')">No active booking</button>`}
+                            </div>
+                        </div>
+                    `;
+                    results.appendChild(card);
+                });
+            })
+            .catch(err => { results.innerHTML = `<div class="alert alert-danger">Error checking: ${err}</div>`; });
+        });
+    }
+
+    // History modal load
+    const historyLoad = document.getElementById('history-load');
+    if (historyLoad) {
+        historyLoad.addEventListener('click', function() {
+            const phone = document.getElementById('history-phone').value.trim();
+            const area = document.getElementById('history-results');
+            area.innerHTML = '';
+            if (!phone) { area.innerHTML = '<div class="alert alert-warning">Please enter a phone number</div>'; return; }
+            area.innerHTML = '<div class="text-center">Loading...</div>';
+            fetch('/patients/api/check-patient/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify({ phone_number: phone })
+            })
+            .then(async r => { const t = await r.text(); try { return JSON.parse(t); } catch (e) { return { success: false, message: t }; } })
+            .then(data => {
+                area.innerHTML = '';
+                if (!data.exists || !data.patients || data.patients.length === 0) { area.innerHTML = '<div class="alert alert-info">No history found</div>'; return; }
+                data.patients.forEach(p => {
+                    const section = document.createElement('div');
+                    section.className = 'mb-3';
+                    section.innerHTML = `<h6>${p.name} <small class="text-muted">${p.phone_number}</small></h6>`;
+                    if (p.latest_booking) {
+                        section.innerHTML += `<div class="card"><div class="card-body">Department: ${p.latest_booking.department}<br>Status: ${p.latest_booking.status}<br>Booked: ${p.latest_booking.created_at}</div></div>`;
+                    } else {
+                        section.innerHTML += `<div class="text-muted">No bookings</div>`;
+                    }
+                    area.appendChild(section);
+                });
+            })
+            .catch(err => area.innerHTML = `<div class="alert alert-danger">Error loading history: ${err}</div>`);
+        });
+    }
+});
+
+function viewQueue(bookingId) {
+    window.location.href = `/patients/queue/my-position/${bookingId}/`;
+}
+
+function cancelFromModal(bookingId, btn) {
+    // Open confirmation modal and store pending values
+    window._pendingCancel = { bookingId: bookingId, button: btn };
+    const confirmModalEl = document.getElementById('cancelConfirmModal');
+    if (confirmModalEl) {
+        const confirmModal = new bootstrap.Modal(confirmModalEl);
+        confirmModal.show();
+    } else {
+        // fallback: perform cancellation directly
+        performCancel(bookingId, btn);
+    }
+}
+
+// performCancel does the actual POST and UI updates
+function performCancel(bookingId, btn) {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    const cancelUrl = `/patients/api/booking/${bookingId}/cancel/`;
+    fetch(cancelUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(async r => {
+        try { return await r.json(); } catch (e) { return { success: false, message: 'Invalid server response' }; }
+    })
+    .then(data => {
+        if (data.success) {
+            showToast('Appointment cancelled', 'success');
+            if (btn && btn.closest && btn.closest('.card')) btn.closest('.card').remove();
+        } else {
+            showToast('Failed to cancel: ' + (data.message || 'Unknown error'), 'danger');
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Cancel'; }
+        }
+    })
+    .catch(err => { showToast('Error cancelling: ' + err, 'danger'); if (btn) { btn.disabled = false; btn.innerHTML = 'Cancel'; } });
+}
+
+// Hook the confirm modal button
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmBtn = document.getElementById('cancel-confirm-btn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            const pending = window._pendingCancel;
+            const modalEl = document.getElementById('cancelConfirmModal');
+            const modal = modalEl ? bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl) : null;
+            if (modal) modal.hide();
+            if (pending) {
+                performCancel(pending.bookingId, pending.button);
+                window._pendingCancel = null;
+            }
+        });
+    }
+
+    // Toast helper
+    window.showToast = function(message, type='info') {
+        const container = document.getElementById('portalToasts');
+        if (!container) return;
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-bg-${type} border-0 show`;
+        toastEl.setAttribute('role','alert');
+        toastEl.setAttribute('aria-live','assertive');
+        toastEl.setAttribute('aria-atomic','true');
+        toastEl.style.minWidth = '200px';
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        container.appendChild(toastEl);
+        setTimeout(() => { toastEl.classList.remove('show'); toastEl.remove(); }, 4500);
+    };
+});
+
+// Assign specific hospital photos based on hospital names
+function assignSpecificHospitalPhotos() {
+    // High-quality hospital building photos from Unsplash
+    const hospitalPhotoMap = {
+        'City General Hospital': {
+            url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+            alt: 'Modern hospital building with glass facade'
+        },
+        'Metro Medical Center': {
+            url: 'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccf?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+            alt: 'Large medical center with multiple wings',
+            backup: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=200&fit=crop&crop=center&auto=format&q=80'
+        },
+        'Elite Healthcare': {
+            url: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+            alt: 'Contemporary healthcare facility'
+        },
+        'Community Care Hospital': {
+            url: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+            alt: 'Community hospital building'
+        },
+        'Sunrise Specialty Hospital': {
+            url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+            alt: 'Specialty hospital with modern architecture'
+        }
+    };
+    
+    // Default hospital photos for fallback
+    const defaultHospitalPhotos = [
+        'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+        'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccf?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+        'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+        'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400&h=200&fit=crop&crop=center&auto=format&q=80',
+        'https://images.unsplash.com/photo-1551076805-e1869033e561?w=400&h=200&fit=crop&crop=center&auto=format&q=80'
+    ];
+    
+    // Get all hospital cards and assign specific building photos
+    const hospitalCards = document.querySelectorAll('.hospital-card');
+    
+    console.log('Found hospital cards:', hospitalCards.length);
+    
+    hospitalCards.forEach((card, index) => {
+        const hospitalNameElement = card.querySelector('h5.text-primary');
+        if (!hospitalNameElement) {
+            console.log('No hospital name element found in card', index);
+            return;
+        }
+        
+        const hospitalName = hospitalNameElement.textContent.trim();
+        console.log('Processing hospital:', hospitalName);
+        
+        // Look for placeholder images (both visible and hidden fallback ones)
+        const placeholders = card.querySelectorAll('.hospital-placeholder');
+        let img = null;
+        
+        // Find the placeholder that should be used
+        for (let placeholder of placeholders) {
+            const placeholderImg = placeholder.querySelector('img');
+            if (placeholderImg && !placeholderImg.src) {
+                img = placeholderImg;
+                break;
+            }
+        }
+        
+        if (!img) {
+            console.log('No image placeholder found for:', hospitalName);
+            return;
+        }
+        
+        // Check if we have a specific building photo for this hospital
+        if (hospitalPhotoMap[hospitalName]) {
+            console.log('Found specific photo for:', hospitalName);
+            img.src = hospitalPhotoMap[hospitalName].url;
+            img.alt = hospitalPhotoMap[hospitalName].alt;
+            
+            // Handle loading errors with backup
+            img.onerror = function() {
+                console.warn('Primary image failed for:', hospitalName, 'trying backup...');
+                if (hospitalPhotoMap[hospitalName].backup && this.src !== hospitalPhotoMap[hospitalName].backup) {
+                    this.src = hospitalPhotoMap[hospitalName].backup;
+                } else {
+                    console.warn('All images failed for:', hospitalName);
+                    this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    this.style.display = 'flex';
+                    this.style.alignItems = 'center';
+                    this.style.justifyContent = 'center';
+                    this.style.color = 'white';
+                    this.style.fontSize = '14px';
+                    this.innerHTML = '<i class="fas fa-hospital-alt"></i>';
+                }
+            };
+        } else {
+            console.log('Using default photo for:', hospitalName, 'at index:', index);
+            // Use default hospital photo based on index
+            const photoIndex = index % defaultHospitalPhotos.length;
+            img.src = defaultHospitalPhotos[photoIndex];
+            img.alt = `${hospitalName} building`;
+            
+            // Handle loading errors for default photos
+            img.onerror = function() {
+                console.warn('Failed to load default image for:', hospitalName);
+                this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                this.style.display = 'flex';
+                this.style.alignItems = 'center';
+                this.style.justifyContent = 'center';
+                this.style.color = 'white';
+                this.style.fontSize = '14px';
+                this.innerHTML = '<i class="fas fa-hospital-alt"></i>';
+            };
+        }
+        
+        // Add loading animation
+        img.style.opacity = '0';
+        img.onload = function() {
+            console.log('Image loaded successfully for:', hospitalName);
+            this.style.transition = 'opacity 0.3s ease-in-out';
+            this.style.opacity = '1';
+        };
+    });
+}
+
+// Manual test function for debugging - can be called from browser console
+window.testHospitalPhotos = function() {
+    console.log('=== Testing Hospital Photos ===');
+    const cards = document.querySelectorAll('.hospital-card');
+    console.log('Total hospital cards found:', cards.length);
+    
+    cards.forEach((card, index) => {
+        const nameEl = card.querySelector('h5.text-primary');
+        const name = nameEl ? nameEl.textContent.trim() : 'Unknown';
+        console.log(`Card ${index}: ${name}`);
+        
+        const placeholders = card.querySelectorAll('.hospital-placeholder');
+        console.log(`  Placeholders found: ${placeholders.length}`);
+        
+        placeholders.forEach((ph, phIndex) => {
+            const img = ph.querySelector('img');
+            console.log(`  Placeholder ${phIndex}:`, {
+                hasImg: !!img,
+                imgSrc: img ? img.src : 'none',
+                visible: ph.style.display !== 'none'
+            });
+        });
+    });
+    
+    console.log('=== Reassigning Photos ===');
+    assignSpecificHospitalPhotos();
+};
+
+// Initialize hospital photos when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Try to assign photos immediately
+    assignSpecificHospitalPhotos();
+    
+    // Also try again after a short delay in case content is loading dynamically
+    setTimeout(function() {
+        assignSpecificHospitalPhotos();
+    }, 500);
+    
+    // Set up a mutation observer to catch dynamically added hospitals
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length > 0) {
+                // Check if any hospital cards were added
+                const addedCards = Array.from(mutation.addedNodes).filter(node => 
+                    node.nodeType === 1 && node.classList && node.classList.contains('hospital-card')
+                );
+                if (addedCards.length > 0) {
+                    setTimeout(assignSpecificHospitalPhotos, 100);
+                }
+            }
+        });
+    });
+    
+    const hospitalsContainer = document.getElementById('hospitals-container');
+    if (hospitalsContainer) {
+        observer.observe(hospitalsContainer, { childList: true, subtree: true });
+    }
+});
+</script>
+{% endblock %}

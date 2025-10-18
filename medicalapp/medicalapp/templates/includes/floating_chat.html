@@ -1,0 +1,20 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'chat/chat_widget.css' %}">
+<div id="floating-chat" class="floating-chat">
+    <button id="chat-toggle" class="chat-toggle" aria-label="Open chat">
+        <span class="chat-dot"></span>
+    </button>
+
+    <div id="chat-box" class="chat-box" role="dialog" aria-hidden="true">
+        <div class="chat-header">
+            <strong>CliniQ Assistant</strong>
+            <button id="chat-close" class="btn-close" aria-label="Close chat"></button>
+        </div>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+            <input id="chat-input" class="chat-input" placeholder="Ask me about bookings, doctors, or appointments..." autocomplete="off">
+            <button type="submit" class="chat-send">Send</button>
+        </form>
+    </div>
+    <script src="{% static 'chat/chat_widget.js' %}"></script>
+</div>

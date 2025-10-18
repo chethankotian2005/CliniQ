@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin QR Scanner - Patient Check-in{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3 class="mb-1">
+                                <i class="fas fa-qrcode me-2"></i>
+                                Admin QR Scanner - Patient Check-in
+                            </h3>
+                            <p class="mb-0">Scan patient QR codes to check them in and assign token numbers</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-light">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Scanner Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera me-2"></i>
+                        QR Code Scanner
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="scanner-container">
+                                <div id="reader" style="width: 100%; border: 2px dashed #28a745; border-radius: 8px; padding: 20px; text-align: center; background: #f8f9fa;">
+                                    <i class="fas fa-camera" style="font-size: 3rem; color: #6c757d; margin-bottom: 10px;"></i>
+                                    <p class="text-muted">Click "Start Scanner" to begin scanning</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 text-center">
+                                <button id="start-scan" class="btn btn-success btn-lg me-2">
+                                    <i class="fas fa-camera"></i> Start Scanner
+                                </button>
+                                <button id="stop-scan" class="btn btn-danger btn-lg me-2" disabled>
+                                    <i class="fas fa-stop"></i> Stop Scanner
+                                </button>
+                                <button class="btn btn-outline-primary btn-lg" onclick="showManualEntry()">
+                                    <i class="fas fa-keyboard"></i> Manual Entry
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-5">
+                            <!-- Scan Result -->
+                            <div id="scan-result" class="alert alert-secondary">
+                                <i class="fas fa-info-circle"></i> Ready to scan QR codes
+                            </div>
+                            
+                            <!-- Patient Information -->
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">Patient Information</h6>
+                                </div>
+                                <div class="card-body" id="patient-info">
+                                    <p class="text-muted text-center">No patient checked in yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Today's Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary" id="total-checkins">0</h4>
+                            <small class="text-muted">Total Check-ins</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success" id="current-waiting">0</h4>
+                            <small class="text-muted">Currently Waiting</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Scans -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Check-ins
+                    </h6>
+                </div>
+                <div class="card-body" id="recent-scans" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted text-center">No recent scans</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Entry Modal -->
+<div class="modal fade" id="manualEntryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-keyboard me-2"></i>
+                    Manual QR Code Entry
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Enter the QR code data if camera scanning is not available.</p>
+                <div class="mb-3">
+                    <label for="manual-qr-input" class="form-label">QR Code Data:</label>
+                    <input type="text" class="form-control" id="manual-qr-input" placeholder="CLINIQ:BOOKING:123:abc123" autofocus>
+                    <div class="form-text">Example: CLINIQ:BOOKING:123:abc123</div>
+                </div>
+                <div id="manual-scan-result"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="processManualEntry()">
+                    <i class="fas fa-check me-2"></i>
+                    Process QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Patient Checked In Successfully!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="success-content">
+                <!-- Success details will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                    <i class="fas fa-thumbs-up me-2"></i>
+                    Great!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    QR Code Error
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="error-content">
+                <!-- Error details will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+let html5QrcodeScanner = null;
+
+// Debug function to check DOM elements
+function checkRequiredElements() {
+    const requiredElements = [
+        'scan-result',
+        'patient-info',
+        'recent-scans',
+        'manual-qr-input',
+        'manual-scan-result',
+        'start-scan',
+        'stop-scan'
+    ];
+    
+    console.log('Checking required DOM elements:');
+    requiredElements.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`- ${id}:`, element ? 'Found' : 'MISSING');
+        if (!element) {
+            console.error(`Missing element: ${id}`);
+        }
+    });
+}
+
+// Initialize scanner when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Initializing QR Scanner');
+    checkRequiredElements();
+    updateStats();
+    setInterval(updateStats, 30000); // Update stats every 30 seconds
+});
+
+// Start QR Scanner
+document.getElementById('start-scan').addEventListener('click', function() {
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+    
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    
+    document.getElementById('start-scan').disabled = true;
+    document.getElementById('stop-scan').disabled = false;
+    updateScanStatus('info', 'Scanner started. Point camera at QR code...');
+});
+
+// Stop QR Scanner
+document.getElementById('stop-scan').addEventListener('click', function() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear();
+        html5QrcodeScanner = null;
+    }
+    
+    document.getElementById('start-scan').disabled = false;
+    document.getElementById('stop-scan').disabled = true;
+    updateScanStatus('secondary', 'Scanner stopped. Click "Start Scanner" to begin.');
+    
+    // Reset reader div
+    document.getElementById('reader').innerHTML = `
+        <i class="fas fa-camera" style="font-size: 3rem; color: #6c757d; margin-bottom: 10px;"></i>
+        <p class="text-muted">Click "Start Scanner" to begin scanning</p>
+    `;
+});
+
+// QR Code scan success callback
+function onScanSuccess(decodedText, decodedResult) {
+    // Stop scanning temporarily
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.pause(true);
+    }
+    
+    processQRCode(decodedText);
+}
+
+// QR Code scan failure callback
+function onScanFailure(error) {
+    // Handle scan failure silently (continuous scanning)
+}
+
+// Process QR Code
+function processQRCode(qrData) {
+    console.log('Processing QR code:', qrData);
+    updateScanStatus('info', 'Processing QR code...');
+    
+    // Simple fetch without CSRF token (API is @csrf_exempt)
+    fetch('/patients/api/booking/qr-scan/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ qr_code: qrData })
+    })
+    .then(response => {
+        console.log('API Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('API Response data:', data);
+        
+        if (data.success) {
+            console.log('Success! Token:', data.token_number);
+            showSuccess(data);
+            addToRecentScans(data, true);
+            updateStats();
+        } else {
+            console.log('API Error:', data.message);
+            showError(data.message);
+            addToRecentScans({ message: data.message }, false);
+        }
+        
+        // Resume scanning after a short delay
+        setTimeout(() => {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.resume();
+                updateScanStatus('info', 'Scanner ready. Point camera at next QR code...');
+            }
+        }, 2000);
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        showError('Network error: ' + error.message);
+        setTimeout(() => {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.resume();
+                updateScanStatus('warning', 'Network error. Scanner ready for next code...');
+            }
+        }, 2000);
+    });
+}
+
+// Show success modal
+function showSuccess(data) {
+    const successContent = document.getElementById('success-content');
+    successContent.innerHTML = `
+        <div class="text-center">
+            <h4 class="text-success mb-3">Token Number: ${data.token_number}</h4>
+            <div class="row">
+                <div class="col-6">
+                    <strong>Patient Name:</strong><br>
+                    ${data.patient_name}
+                </div>
+                <div class="col-6">
+                    <strong>Department:</strong><br>
+                    ${data.department}
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <strong>Queue Position:</strong><br>
+                    ${data.position}
+                </div>
+                <div class="col-6">
+                    <strong>Estimated Wait:</strong><br>
+                    ~${data.estimated_wait_time} min
+                </div>
+            </div>
+            <div class="alert alert-success mt-3">
+                <small>Patient has been successfully checked in and added to the queue!</small>
+            </div>
+        </div>
+    `;
+    
+    updateScanStatus('success', `Patient checked in! Token: ${data.token_number}`);
+    updatePatientInfo(data);
+    
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    successModal.show();
+}
+
+// Show error modal
+function showError(message) {
+    const errorContent = document.getElementById('error-content');
+    errorContent.innerHTML = `<p class="text-danger">${message}</p>`;
+    
+    updateScanStatus('danger', message);
+    
+    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    errorModal.show();
+}
+
+// Update scan status
+function updateScanStatus(type, message) {
+    const statusDiv = document.getElementById('scan-result');
+    if (statusDiv) {
+        statusDiv.className = `alert alert-${type}`;
+        statusDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+    } else {
+        console.error('scan-result element not found');
+        console.log('Trying to set status:', type, message);
+    }
+}
+
+// Update patient info panel
+function updatePatientInfo(data) {
+    const patientInfo = document.getElementById('patient-info');
+    if (patientInfo) {
+        patientInfo.innerHTML = `
+            <div class="text-center">
+                <h5 class="text-primary">Token ${data.token_number}</h5>
+                <hr>
+                <p><strong>Name:</strong> ${data.patient_name}</p>
+                <p><strong>Department:</strong> ${data.department}</p>
+                <p><strong>Status:</strong> <span class="badge bg-success">${data.status}</span></p>
+                <p><strong>Queue Position:</strong> ${data.position}</p>
+                <p><strong>Wait Time:</strong> ~${data.estimated_wait_time} min</p>
+                <small class="text-muted">Checked in at ${new Date().toLocaleTimeString()}</small>
+            </div>
+        `;
+    } else {
+        console.error('patient-info element not found');
+    }
+}
+
+// Add to recent scans
+function addToRecentScans(data, success) {
+    const recentScans = document.getElementById('recent-scans');
+    if (!recentScans) {
+        console.error('recent-scans element not found');
+        return;
+    }
+    
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const scanEntry = document.createElement('div');
+    scanEntry.className = `border-bottom pb-2 mb-2 ${success ? 'text-success' : 'text-danger'}`;
+    scanEntry.innerHTML = `
+        <small>
+            <strong>${timestamp}</strong><br>
+            ${success ? `✓ ${data.patient_name} - Token ${data.token_number}` : `✗ ${data.message}`}
+        </small>
+    `;
+    
+    if (recentScans.firstChild && recentScans.firstChild.textContent.includes('No recent scans')) {
+        recentScans.innerHTML = '';
+    }
+    
+    recentScans.insertBefore(scanEntry, recentScans.firstChild);
+    
+    // Keep only last 10 entries
+    while (recentScans.children.length > 10) {
+        recentScans.removeChild(recentScans.lastChild);
+    }
+}
+
+// Show manual entry modal
+function showManualEntry() {
+    const modal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
+    document.getElementById('manual-qr-input').value = '';
+    document.getElementById('manual-scan-result').innerHTML = '';
+    modal.show();
+}
+
+// Process manual entry
+function processManualEntry() {
+    const qrInput = document.getElementById('manual-qr-input');
+    const resultDiv = document.getElementById('manual-scan-result');
+    
+    if (!qrInput || !resultDiv) {
+        console.error('Manual entry elements not found:', { qrInput: !!qrInput, resultDiv: !!resultDiv });
+        alert('Error: Manual entry form elements not found');
+        return;
+    }
+    
+    const qrCode = qrInput.value.trim();
+    console.log('Manual entry QR code:', qrCode);
+    
+    if (!qrCode) {
+        resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a QR code</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info">Processing...</div>';
+    
+    // Add timeout to show processing is happening
+    setTimeout(() => {
+        processQRCode(qrCode);
+    }, 100);
+    
+    // Close modal after a longer delay to see result
+    setTimeout(() => {
+        const modalElement = document.getElementById('manualEntryModal');
+        if (modalElement) {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        }
+    }, 3000);
+}
+
+// Update statistics
+function updateStats() {
+    fetch('/patients/api/dashboard-stats/')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-checkins').textContent = data.total_checkins || 0;
+        document.getElementById('current-waiting').textContent = data.current_waiting || 0;
+    })
+    .catch(error => {
+        console.error('Failed to update stats:', error);
+    });
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.scanner-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#reader {
+    min-height: 300px;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+.alert {
+    border-radius: 8px;
+}
+
+.modal-content {
+    border-radius: 10px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Scanner - Final Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #007bff; margin: 0; }
+        .section { margin: 25px 0; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; background: #f8f9fa; }
+        .btn { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 8px 4px; font-size: 14px; }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; margin: 8px 0; font-size: 14px; }
+        .alert { padding: 15px; margin: 15px 0; border-radius: 6px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border: 2px dashed #28a745; border-radius: 8px; }
+        .log { background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; }
+        .qr-list { background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef; }
+        .qr-item { padding: 8px; margin: 4px 0; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 QR Scanner - Final Test</h1>
+            <p>Complete QR scanner testing tool with camera and manual entry</p>
+        </div>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Important:</strong> Make sure you're logged into the admin panel first!<br>
+            <a href="/adminpanel/login/" target="_blank">Login to Admin Panel</a>
+        </div>
+
+        <div class="section">
+            <h3>📱 Available Test QR Codes</h3>
+            <div class="qr-list">
+                <p class="alert-warning">No QR codes available</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📷 Camera QR Scanner</h3>
+            <div id="reader"></div>
+            <div style="text-align: center; margin: 20px 0;">
+                <button id="start-camera" class="btn btn-success">📷 Start Camera Scanner</button>
+                <button id="stop-camera" class="btn btn-danger" disabled>⏹️ Stop Camera</button>
+            </div>
+            <div id="camera-result"></div>
+        </div>
+
+        <div class="section">
+            <h3>⌨️ Manual QR Code Testing</h3>
+            <label for="qr-select">Select Test QR Code:</label>
+            <select id="qr-select" class="form-control">
+                <option value="">-- Select a QR code --</option>
+                
+            </select>
+            
+            <label for="manual-qr">Or Enter QR Code Manually:</label>
+            <input type="text" id="manual-qr" class="form-control" placeholder="CLINIQ:BOOKING:ID:HASH">
+            
+            <button id="test-qr" class="btn">🧪 Test QR Code</button>
+            <div id="manual-result"></div>
+        </div>
+
+        <div class="section">
+            <h3>📋 Debug Log</h3>
+            <div id="debug-log" class="log">Ready for testing...<br></div>
+            <button onclick="clearLog()" class="btn" style="background: #6c757d;">🗑️ Clear Log</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        let scanner = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = 'Log cleared...<br>';
+        }
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 QR Scanner Test Page Loaded');
+            
+            if (typeof Html5QrcodeScanner !== 'undefined') {
+                log('✅ HTML5 QR Code library loaded successfully');
+            } else {
+                log('❌ HTML5 QR Code library failed to load');
+            }
+            
+            // Auto-select first QR code
+            const select = document.getElementById('qr-select');
+            if (select.options.length > 1) {
+                select.selectedIndex = 1;
+                document.getElementById('manual-qr').value = select.value;
+            }
+        });
+        
+        // QR selection change
+        document.getElementById('qr-select').addEventListener('change', function() {
+            document.getElementById('manual-qr').value = this.value;
+        });
+        
+        // Start camera
+        document.getElementById('start-camera').addEventListener('click', function() {
+            log('📷 Starting camera scanner...');
+            
+            try {
+                scanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                }, false);
+                
+                scanner.render(
+                    function(decodedText) {
+                        log(`🎯 QR Code detected: ${decodedText}`);
+                        showResult('camera-result', `QR Code detected: ${decodedText}`, 'success');
+                        testQRCode(decodedText);
+                    },
+                    function(error) {
+                        // Silent for continuous scanning
+                    }
+                );
+                
+                document.getElementById('start-camera').disabled = true;
+                document.getElementById('stop-camera').disabled = false;
+                log('✅ Camera scanner started - point camera at QR code');
+                showResult('camera-result', '📷 Camera active - point at QR code', 'info');
+                
+            } catch (error) {
+                log(`❌ Camera error: ${error.message}`);
+                showResult('camera-result', `Camera Error: ${error.message}`, 'danger');
+            }
+        });
+        
+        // Stop camera
+        document.getElementById('stop-camera').addEventListener('click', function() {
+            if (scanner) {
+                scanner.clear().then(() => {
+                    log('🛑 Camera scanner stopped');
+                }).catch(err => {
+                    log(`⚠️ Error stopping scanner: ${err}`);
+                });
+                scanner = null;
+            }
+            
+            document.getElementById('start-camera').disabled = false;
+            document.getElementById('stop-camera').disabled = true;
+            showResult('camera-result', 'Camera stopped', 'info');
+        });
+        
+        // Manual test
+        document.getElementById('test-qr').addEventListener('click', function() {
+            const qrCode = document.getElementById('manual-qr').value.trim();
+            if (!qrCode) {
+                showResult('manual-result', '⚠️ Please enter or select a QR code', 'warning');
+                return;
+            }
+            
+            log(`🧪 Testing QR code manually: ${qrCode}`);
+            testQRCode(qrCode);
+        });
+        
+        // Test QR code function
+        function testQRCode(qrCode) {
+            log(`📡 Sending API request for: ${qrCode}`);
+            showResult('manual-result', '⏳ Processing QR code...', 'info');
+            
+            fetch('/patients/api/booking/qr-scan/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ qr_code: qrCode })
+            })
+            .then(response => {
+                log(`📨 API response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error('Authentication required - please login to admin panel');
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                log(`📄 API response: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    const message = `
+                        <strong>🎉 QR Code Processed Successfully!</strong><br>
+                        <strong>Patient:</strong> ${data.patient_name}<br>
+                        <strong>Token Number:</strong> ${data.token_number}<br>
+                        <strong>Department:</strong> ${data.department}<br>
+                        <strong>Status:</strong> ${data.status}<br>
+                        <strong>Message:</strong> ${data.message}
+                    `;
+                    showResult('manual-result', message, 'success');
+                    log(`✅ SUCCESS: Token ${data.token_number} assigned to ${data.patient_name}`);
+                } else {
+                    showResult('manual-result', `❌ Error: ${data.message}`, 'danger');
+                    log(`❌ API Error: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                log(`💥 Network/API error: ${error.message}`);
+                
+                if (error.message.includes('Authentication')) {
+                    showResult('manual-result', 
+                        `🔐 Authentication Error: Please <a href="/adminpanel/login/" target="_blank">login to admin panel</a> first`, 
+                        'warning');
+                } else {
+                    showResult('manual-result', `❌ Network Error: ${error.message}`, 'danger');
+                }
+            });
+        }
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

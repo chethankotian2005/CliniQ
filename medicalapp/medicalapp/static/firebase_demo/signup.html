@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Firebase Signup Demo</title></head>
+<body>
+  <h2>Signup / Login Demo</h2>
+
+  <div>
+    <input id="email" placeholder="email" />
+    <input id="password" placeholder="password" type="password" />
+    <button id="signupBtn">Sign up</button>
+    <button id="loginBtn">Sign in</button>
+  </div>
+
+  <pre id="out"></pre>
+
+  <script type="module">
+    // Replace the fields below with your public Firebase client config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO-cTGHWBcwdWvL-emtSgLp7upB56S95w",
+      authDomain: "cliniq-f6e98.firebaseapp.com",
+      projectId: "cliniq-f6e98",
+      storageBucket: "cliniq-f6e98.firebasestorage.app",
+      messagingSenderId: "246784924107",
+      appId: "1:246784924107:web:9be371b50c71e5ac2a7e4e",
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const out = document.getElementById('out');
+    function log(...args){ out.textContent += args.join(' ') + '\n'; }
+
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        log('Signed up:', userCred.user.uid);
+        const idToken = await userCred.user.getIdToken();
+        log('ID Token (short):', idToken.slice(0, 40) + '...');
+        await sendTokenToServer(idToken);
+      } catch (err) {
+        log('Signup error:', err.message || err);
+      }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        log('Signed in:', userCred.user.uid);
+        const idToken = await userCred.user.getIdToken();
+        log('ID Token (short):', idToken.slice(0, 40) + '...');
+        await sendTokenToServer(idToken);
+      } catch (err) {
+        log('Sign-in error:', err.message || err);
+      }
+    });
+
+    async function sendTokenToServer(idToken) {
+      try {
+        const res = await fetch('/notifications/api/status/', {
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer ' + idToken },
+        });
+        log('Server response status:', res.status);
+        const data = await res.text();
+        log('Server response body:', data);
+      } catch (err) {
+        log('Error calling server:', err);
+      }
+    }
+
+    onAuthStateChanged(auth, user => {
+      if (user) log('Current user', user.uid, user.email);
+      else log('Not signed in');
+    });
+  </script>
+</body>
+</html>

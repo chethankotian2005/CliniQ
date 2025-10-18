@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Scanner Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .btn:disabled { opacity: 0.5; }
+        .success { color: green; }
+        .error { color: red; }
+        .debug { background: #f8f9fa; padding: 10px; margin: 10px 0; font-family: monospace; }
+        #reader { width: 100%; max-width: 400px; border: 2px dashed #28a745; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>QR Scanner Debug Page</h1>
+    
+    <div class="section">
+        <h3>Library Status</h3>
+        <div id="library-status">Checking...</div>
+    </div>
+    
+    <div class="section">
+        <h3>Camera Scanner</h3>
+        <div id="reader"></div>
+        <button id="start-camera" class="btn">Start Camera Scanner</button>
+        <button id="stop-camera" class="btn" disabled>Stop Camera Scanner</button>
+        <div id="camera-status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Manual Testing</h3>
+        <input type="text" id="manual-qr" placeholder="Paste QR code here" style="width: 300px; padding: 8px;">
+        <button id="test-manual" class="btn">Test Manual Entry</button>
+        <div id="manual-result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="debug-log" class="debug"></div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        let scanner = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `${time}: ${message}<br>`;
+            console.log(message);
+        }
+        
+        function setStatus(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = isError ? 'error' : 'success';
+        }
+        
+        // Check library status
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Html5QrcodeScanner !== 'undefined') {
+                setStatus('library-status', '✅ HTML5 QR Code library loaded');
+                log('Library loaded successfully');
+            } else {
+                setStatus('library-status', '❌ HTML5 QR Code library failed to load', true);
+                log('ERROR: Library not loaded');
+            }
+            
+            // Check camera support
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                log('Browser supports camera access');
+            } else {
+                log('ERROR: Browser does not support camera access');
+            }
+        });
+        
+        // Start camera scanner
+        document.getElementById('start-camera').addEventListener('click', function() {
+            log('Starting camera scanner...');
+            
+            try {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                };
+                
+                scanner = new Html5QrcodeScanner("reader", config, false);
+                scanner.render(
+                    function(decodedText, decodedResult) {
+                        log(`QR Code detected: ${decodedText}`);
+                        setStatus('camera-status', `✅ QR Detected: ${decodedText}`);
+                        testQRCode(decodedText);
+                    },
+                    function(error) {
+                        // Silent - too many scan attempts
+                    }
+                );
+                
+                document.getElementById('start-camera').disabled = true;
+                document.getElementById('stop-camera').disabled = false;
+                setStatus('camera-status', '📷 Camera started - point at QR code');
+                log('Camera scanner started');
+                
+            } catch (error) {
+                log(`ERROR starting camera: ${error.message}`);
+                setStatus('camera-status', `❌ Error: ${error.message}`, true);
+            }
+        });
+        
+        // Stop camera scanner
+        document.getElementById('stop-camera').addEventListener('click', function() {
+            if (scanner) {
+                scanner.clear().then(() => {
+                    log('Camera scanner stopped');
+                }).catch(err => {
+                    log(`Error stopping scanner: ${err}`);
+                });
+                scanner = null;
+            }
+            
+            document.getElementById('start-camera').disabled = false;
+            document.getElementById('stop-camera').disabled = true;
+            setStatus('camera-status', '📷 Camera stopped');
+        });
+        
+        // Manual testing
+        document.getElementById('test-manual').addEventListener('click', function() {
+            const qrCode = document.getElementById('manual-qr').value.trim();
+            if (!qrCode) {
+                setStatus('manual-result', '❌ Please enter a QR code', true);
+                return;
+            }
+            
+            log(`Testing manual QR: ${qrCode}`);
+            testQRCode(qrCode);
+        });
+        
+        // Test QR code with API
+        function testQRCode(qrCode) {
+            log(`Sending API request for: ${qrCode}`);
+            setStatus('manual-result', '⏳ Processing...');
+            
+            fetch('/patients/api/booking/qr-scan/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ qr_code: qrCode })
+            })
+            .then(response => {
+                log(`API Response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                log(`API Response: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    setStatus('manual-result', `✅ Success! Token: ${data.token_number}, Patient: ${data.patient_name}`);
+                } else {
+                    setStatus('manual-result', `❌ Failed: ${data.message}`, true);
+                }
+            })
+            .catch(error => {
+                log(`API Error: ${error.message}`);
+                setStatus('manual-result', `❌ Network Error: ${error.message}`, true);
+            });
+        }
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

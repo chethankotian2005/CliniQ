@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}Booking Confirmation{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i>
+                        Booking Confirmed!
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-calendar-check"></i> Your appointment has been successfully booked!</h5>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">Booking Details</h6>
+                                </div>
+                                <div class="card-body text-start">
+                                    <p><strong>Patient Name:</strong> {{ booking.patient.name }}</p>
+                                    <p><strong>Phone:</strong> {{ booking.patient.phone_number }}</p>
+                                    <p><strong>Department:</strong> {{ booking.department.name }}</p>
+                                    {% if booking.preferred_doctor %}
+                                    <p><strong>Preferred Doctor:</strong> Dr. {{ booking.preferred_doctor.name }}</p>
+                                    {% endif %}
+                                    <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"F d, Y" }}</p>
+                                    {% if booking.booking_time_slot %}
+                                    <p><strong>Time Preference:</strong> {{ booking.booking_time_slot|title }}</p>
+                                    {% endif %}
+                                    <p><strong>Status:</strong> 
+                                        <span class="badge bg-info">{{ booking.get_status_display }}</span>
+                                    </p>
+                                    <p><strong>Booking ID:</strong> #{{ booking.id }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-warning mb-3">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-qrcode"></i>
+                                        Your QR Code
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="qr-code-container mb-3">
+                                        <img src="{{ qr_code_image }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="downloadQR()">
+                                        <i class="fas fa-download"></i> Download QR Code
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success mb-3">
+                        <h6><i class="fas fa-mobile-alt"></i> SMS Notification Sent!</h6>
+                        <p class="mb-0">A confirmation SMS has been sent to <strong>{{ booking.patient.phone_number }}</strong> with your appointment details.</p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Important Instructions:</h6>
+                        <ol class="text-start mb-0">
+                            <li><strong>Save this QR code</strong> - Screenshot or download it to your phone</li>
+                            <li><strong>Arrive at the hospital</strong> on your booking date</li>
+                            <li><strong>Go to reception</strong> and scan this QR code</li>
+                            <li><strong>Get your token number</strong> and join the queue</li>
+                            <li><strong>Wait for your turn</strong> - you'll be called by token number</li>
+                            <li><strong>SMS updates</strong> - You'll receive SMS notifications for important updates</li>
+                        </ol>
+                    </div>
+
+                    {% if booking.notes %}
+                    <div class="alert alert-info">
+                        <strong>Your Notes:</strong> {{ booking.notes }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{% url 'patients:patient_queue' booking.id %}" class="btn btn-success me-2">
+                            <i class="fas fa-clock"></i> View Queue Status
+                        </a>
+                        <!-- Cancel appointment button (only show when cancellable) -->
+                        {% if booking.status in 'booked arrived waiting' %}
+                        <button class="btn btn-danger me-2" id="cancelBookingBtn">
+                            <i class="fas fa-times-circle"></i> Cancel Appointment
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-primary me-2" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print This Page
+                        </button>
+                        <a href="{% url 'patients:booking' %}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-plus"></i> Book Another Appointment
+                        </a>
+                        <button class="btn btn-outline-info" onclick="shareBooking()">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6>Need Help?</h6>
+                        <p class="mb-0">
+                            <i class="fas fa-phone"></i> Call: +1-234-567-8900<br>
+                            <i class="fas fa-envelope"></i> Email: support@cliniq.com
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadQR() {
+    const qrImage = document.querySelector('.qr-code-container img');
+    const link = document.createElement('a');
+    link.download = 'appointment-qr-code.png';
+    link.href = qrImage.src;
+    link.click();
+}
+
+function shareBooking() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'My Hospital Appointment',
+            text: 'I have booked an appointment at {{ booking.department.name }}. Booking ID: #{{ booking.id }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback - copy to clipboard
+        const bookingDetails = `My Hospital Appointment
+Patient: {{ booking.patient.name }}
+Department: {{ booking.department.name }}
+Date: {{ booking.booking_date|date:"F d, Y" }}
+Booking ID: #{{ booking.id }}
+Link: ${window.location.href}`;
+        
+        navigator.clipboard.writeText(bookingDetails).then(() => {
+            alert('Booking details copied to clipboard!');
+        });
+    }
+}
+
+// Print-specific styles
+window.addEventListener('beforeprint', function() {
+    document.body.classList.add('printing');
+});
+
+window.addEventListener('afterprint', function() {
+    document.body.classList.remove('printing');
+});
+</script>
+
+<!-- Cancel confirmation modal -->
+<div class="modal fade" id="cancelConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Cancellation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel your appointment? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelBtn = document.getElementById('cancelBookingBtn');
+    if (!cancelBtn) return;
+
+    const cancelModalEl = document.getElementById('cancelConfirmModal');
+    const cancelModal = new bootstrap.Modal(cancelModalEl);
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+    cancelBtn.addEventListener('click', function() {
+        cancelModal.show();
+    });
+
+    confirmCancelBtn.addEventListener('click', function() {
+        confirmCancelBtn.disabled = true;
+        confirmCancelBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cancelling...';
+
+        // CSRF helper
+        const getCookie = (name) => {
+            const val = `; ${document.cookie}`;
+            const parts = val.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        };
+
+        const csrftoken = getCookie('csrftoken');
+
+        fetch(`/patients/api/booking/{{ booking.id }}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(csrftoken ? {'X-CSRFToken': csrftoken} : {})
+            }
+        })
+        .then(resp => resp.json())
+        .then(result => {
+            confirmCancelBtn.disabled = false;
+            confirmCancelBtn.innerHTML = 'Yes, Cancel';
+            cancelModal.hide();
+
+            if (result.success) {
+                // Show a simple alert and redirect to portal home
+                alert('Booking cancelled successfully.');
+                window.location.href = '{% url "patients:portal_home" %}';
+            } else {
+                alert('Cancellation failed: ' + (result.message || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            confirmCancelBtn.disabled = false;
+            confirmCancelBtn.innerHTML = 'Yes, Cancel';
+            cancelModal.hide();
+            console.error('Cancel error:', err);
+            alert('An error occurred while cancelling. Please try again.');
+        });
+    });
+});
+</script>
+
+<style>
+@media print {
+    .btn, .alert-warning {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .qr-code-container img {
+        max-width: 150px !important;
+    }
+}
+
+.qr-code-container {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+}
+</style>
+{% endblock %}

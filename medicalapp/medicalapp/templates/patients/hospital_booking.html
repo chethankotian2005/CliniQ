@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment - {{ hospital.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hospital Info Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-1">
+                                <i class="fas fa-calendar-plus"></i>
+                                Book Appointment
+                            </h4>
+                            <p class="mb-0">{{ hospital.name }} - {{ hospital.city }}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'patients:hospital_detail' hospital.id %}" class="btn btn-light">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Hospital
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus"></i>
+                        Patient Information & Appointment Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>How it works:</strong>
+                        <ol class="mb-0 mt-2">
+                            <li>Fill out your details and select preferred department</li>
+                            <li>Receive a unique QR code for your appointment</li>
+                            <li>Come to {{ hospital.name }} and scan the QR code at reception</li>
+                            <li>Get your token number and join the queue</li>
+                        </ol>
+                    </div>
+
+                    <form id="bookingForm">
+                        <!-- Hidden hospital ID -->
+                        <input type="hidden" name="hospital_id" value="{{ hospital.id }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="phone_number" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="age" class="form-label">Age</label>
+                                    <input type="number" class="form-control" id="age" name="age" min="1" max="120">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="gender" class="form-label">Gender</label>
+                                    <select class="form-control" id="gender" name="gender">
+                                        <option value="">Select Gender</option>
+                                        <option value="M">Male</option>
+                                        <option value="F">Female</option>
+                                        <option value="O">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="department_id" class="form-label">Department *</label>
+                                    <select class="form-control" id="department_id" name="department_id" required>
+                                        <option value="">Select Department</option>
+                                        {% for department in departments %}
+                                        <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ department.name }} 
+                                            {% if department.get_waiting_count > 0 %}
+                                                ({{ department.get_waiting_count }} waiting)
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="doctor_id" class="form-label">Preferred Doctor</label>
+                                    <select class="form-control" id="doctor_id" name="doctor_id">
+                                        <option value="">Any Available Doctor</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="booking_date" class="form-label">Preferred Date</label>
+                                    <input type="date" class="form-control" id="booking_date" name="booking_date">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="time_slot" class="form-label">Preferred Time</label>
+                                    <select class="form-control" id="time_slot" name="time_slot">
+                                        <option value="">Any Time</option>
+                                        <option value="morning">Morning (9AM - 12PM)</option>
+                                        <option value="afternoon">Afternoon (12PM - 5PM)</option>
+                                        <option value="evening">Evening (5PM - 8PM)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                            <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact">
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="notes" class="form-label">Symptoms / Reason for Visit</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Please describe your symptoms or reason for the visit..."></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-control" id="priority" name="priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">High Priority</option>
+                                <option value="emergency">Emergency</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-check"></i>
+                                Book Appointment at {{ hospital.name }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Creating your booking...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const dateInput = document.getElementById('booking_date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+
+    // Load doctors when department changes
+    const departmentSelect = document.getElementById('department_id');
+    const doctorSelect = document.getElementById('doctor_id');
+
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        doctorSelect.innerHTML = '<option value="">Any Available Doctor</option>';
+        
+        if (departmentId) {
+            // Load doctors for this department
+            fetch(`/patients/api/hospital/{{ hospital.id }}/departments/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Find the selected department's doctors
+                        const dept = data.departments.find(d => d.id == departmentId);
+                        if (dept && dept.doctors) {
+                            dept.doctors.forEach(doctor => {
+                                const option = document.createElement('option');
+                                option.value = doctor.id;
+                                option.textContent = `Dr. ${doctor.name} - ${doctor.specialty}`;
+                                doctorSelect.appendChild(option);
+                            });
+                        }
+                    }
+                })
+                .catch(error => console.error('Error loading doctors:', error));
+        }
+    });
+
+    // Handle form submission
+    const form = document.getElementById('bookingForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Show loading modal
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        loadingModal.show();
+        
+        fetch('/patients/api/booking/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingModal.hide();
+            
+            if (data.success) {
+                // Redirect to confirmation page
+                window.location.href = `/patients/booking/confirmation/${data.booking_id}/`;
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            loadingModal.hide();
+            console.error('Error:', error);
+            alert('An error occurred while creating your booking. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .scanner-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #28a745;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .alert-info { background: #d1ecf1; color: #0c5460; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .manual-input {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 QR Scanner Diagnostic Tool</h1>
+        
+        <div class="alert alert-info">
+            <strong>Test QR Code:</strong> CLINIQ:BOOKING:a4848d3b:test<br>
+            Use this QR code to test the scanner functionality.
+        </div>
+
+        <!-- Camera Scanner Section -->
+        <div class="scanner-section">
+            <h3>📷 Camera Scanner Test</h3>
+            <div id="reader"></div>
+            <div style="margin-top: 15px;">
+                <button id="start-scan" class="btn btn-success">Start Scanner</button>
+                <button id="stop-scan" class="btn btn-danger" disabled>Stop Scanner</button>
+            </div>
+            <div id="scan-status" class="alert alert-info" style="margin-top: 15px;">
+                Ready to scan. Click "Start Scanner" to begin.
+            </div>
+        </div>
+
+        <!-- Manual Entry Section -->
+        <div class="manual-input">
+            <h3>⌨️ Manual QR Entry Test</h3>
+            <p>If camera doesn't work, test with manual entry:</p>
+            <input type="text" id="manual-qr" class="form-control" 
+                   placeholder="Paste QR code here: CLINIQ:BOOKING:a4848d3b:test"
+                   value="CLINIQ:BOOKING:a4848d3b:test">
+            <button id="process-manual" class="btn btn-primary">Process QR Code</button>
+            <div id="manual-result"></div>
+        </div>
+
+        <!-- Debug Information -->
+        <div id="debug-info" class="manual-input">
+            <h3>🔍 Debug Information</h3>
+            <div id="debug-content"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="result-section" class="manual-input" style="display: none;">
+            <h3>✅ Scan Results</h3>
+            <div id="result-content"></div>
+        </div>
+    </div>
+
+    <!-- Load QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <script>
+        let html5QrcodeScanner = null;
+        
+        // Debug function
+        function addDebug(message) {
+            const debugDiv = document.getElementById('debug-content');
+            const time = new Date().toLocaleTimeString();
+            debugDiv.innerHTML += `<div>${time}: ${message}</div>`;
+        }
+        
+        // Update scan status
+        function updateScanStatus(type, message) {
+            const statusDiv = document.getElementById('scan-status');
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.innerHTML = message;
+            addDebug(`Status: ${message}`);
+        }
+        
+        // Check if library loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Html5QrcodeScanner !== 'undefined') {
+                addDebug('✅ HTML5 QR Code library loaded successfully');
+            } else {
+                addDebug('❌ HTML5 QR Code library failed to load');
+            }
+            
+            // Check browser capabilities
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                addDebug('✅ Browser supports camera access');
+            } else {
+                addDebug('❌ Browser does not support camera access');
+            }
+        });
+        
+        // Start QR Scanner
+        document.getElementById('start-scan').addEventListener('click', function() {
+            addDebug('Starting QR scanner...');
+            
+            try {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    disableFlip: false
+                };
+                
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+                
+                document.getElementById('start-scan').disabled = true;
+                document.getElementById('stop-scan').disabled = false;
+                updateScanStatus('info', 'Scanner started. Point camera at QR code...');
+                
+            } catch (error) {
+                addDebug(`❌ Error starting scanner: ${error.message}`);
+                updateScanStatus('danger', `Error: ${error.message}`);
+            }
+        });
+        
+        // Stop QR Scanner
+        document.getElementById('stop-scan').addEventListener('click', function() {
+            addDebug('Stopping QR scanner...');
+            
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    addDebug('✅ Scanner stopped successfully');
+                }).catch(err => {
+                    addDebug(`⚠️ Error stopping scanner: ${err}`);
+                });
+                html5QrcodeScanner = null;
+            }
+            
+            document.getElementById('start-scan').disabled = false;
+            document.getElementById('stop-scan').disabled = true;
+            updateScanStatus('secondary', 'Scanner stopped. Click "Start Scanner" to begin.');
+            
+            // Reset reader div
+            document.getElementById('reader').innerHTML = '';
+        });
+        
+        // QR Code scan success callback
+        function onScanSuccess(decodedText, decodedResult) {
+            addDebug(`✅ QR Code detected: ${decodedText}`);
+            
+            // Stop scanning temporarily
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.pause(true);
+            }
+            
+            processQRCode(decodedText);
+        }
+        
+        // QR Code scan failure callback
+        function onScanFailure(error) {
+            // Log only occasionally to avoid spam
+            if (Math.random() < 0.01) { // 1% of failures
+                addDebug(`Scan attempt: ${error}`);
+            }
+        }
+        
+        // Process QR Code
+        function processQRCode(qrData) {
+            addDebug(`Processing QR code: ${qrData}`);
+            updateScanStatus('info', 'Processing QR code...');
+            
+            // Show what we're sending
+            addDebug(`Sending POST to: /patients/api/booking/qr-scan/`);
+            addDebug(`Data: ${JSON.stringify({ qr_code: qrData })}`);
+            
+            fetch('/patients/api/booking/qr-scan/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ qr_code: qrData })
+            })
+            .then(response => {
+                addDebug(`Response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                addDebug(`Response data: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    showSuccess(data);
+                } else {
+                    showError(data.message || 'Unknown error');
+                }
+                
+                // Resume scanning after delay
+                setTimeout(() => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.resume();
+                        updateScanStatus('info', 'Scanner ready for next QR code...');
+                    }
+                }, 3000);
+            })
+            .catch(error => {
+                addDebug(`❌ Network error: ${error.message}`);
+                updateScanStatus('danger', `Network error: ${error.message}`);
+                
+                setTimeout(() => {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.resume();
+                    }
+                }, 3000);
+            });
+        }
+        
+        // Show success
+        function showSuccess(data) {
+            const resultDiv = document.getElementById('result-section');
+            const contentDiv = document.getElementById('result-content');
+            
+            contentDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>✅ QR Code Processed Successfully!</h4>
+                    <p><strong>Patient:</strong> ${data.patient_name || 'N/A'}</p>
+                    <p><strong>Token Number:</strong> ${data.token_number || 'N/A'}</p>
+                    <p><strong>Department:</strong> ${data.department || 'N/A'}</p>
+                    <p><strong>Message:</strong> ${data.message || 'Success'}</p>
+                </div>
+            `;
+            
+            resultDiv.style.display = 'block';
+            updateScanStatus('success', 'QR code processed successfully!');
+        }
+        
+        // Show error
+        function showError(message) {
+            const resultDiv = document.getElementById('result-section');
+            const contentDiv = document.getElementById('result-content');
+            
+            contentDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h4>❌ QR Code Processing Failed</h4>
+                    <p><strong>Error:</strong> ${message}</p>
+                </div>
+            `;
+            
+            resultDiv.style.display = 'block';
+            updateScanStatus('danger', `Error: ${message}`);
+        }
+        
+        // Manual entry processing
+        document.getElementById('process-manual').addEventListener('click', function() {
+            const qrData = document.getElementById('manual-qr').value.trim();
+            const resultDiv = document.getElementById('manual-result');
+            
+            if (!qrData) {
+                resultDiv.innerHTML = '<div class="alert alert-danger">Please enter a QR code</div>';
+                return;
+            }
+            
+            addDebug(`Manual entry: ${qrData}`);
+            processQRCode(qrData);
+        });
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

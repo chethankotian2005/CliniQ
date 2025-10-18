@@ -1,0 +1,862 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Appointment Dashboard - CLINIQ{% endblock %}
+
+{% block head %}
+<style>
+    .management-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    /* Modern Hero Header */
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+    }
+    
+    .quick-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .quick-action-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: var(--radius-lg);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all var(--transition);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .quick-action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    /* Stats Dashboard */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--gray-200);
+        transition: all var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary-color);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .stat-icon.scheduled {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+    
+    .stat-icon.ready {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .stat-icon.progress {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    
+    .stat-icon.completed {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-trend {
+        font-size: 0.875rem;
+        color: var(--success-color);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    /* Filters and Search */
+    .filters-section {
+        background: white;
+        padding: 1.5rem 2rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+        border: 1px solid var(--gray-200);
+    }
+    
+    .filters-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: var(--gray-700);
+        font-size: 0.875rem;
+    }
+    
+    .search-input {
+        background: var(--gray-50);
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        transition: all var(--transition);
+        position: relative;
+    }
+    
+    .search-input:focus {
+        border-color: var(--primary-color);
+        background: white;
+        box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+    }
+    
+    .search-container {
+        position: relative;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+        z-index: 1;
+    }
+    
+    .filter-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    /* Modern Appointments Table */
+    .appointments-section {
+        background: white;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        border: 1px solid var(--gray-200);
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, var(--gray-50), white);
+        padding: 2rem;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: between;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .appointments-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .appointments-table th {
+        background: var(--gray-50);
+        padding: 1.5rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-700);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--gray-200);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .appointments-table td {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-100);
+        vertical-align: middle;
+    }
+    
+    .appointments-table tr {
+        transition: all var(--transition);
+    }
+    
+    .appointments-table tr:hover {
+        background: var(--gray-50);
+    }
+    
+    /* Enhanced Status Badges */
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-xl);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .status-scheduled {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1e40af;
+    }
+    
+    .status-ready {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        color: #16a34a;
+    }
+    
+    .status-in-progress {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #92400e;
+    }
+    
+    .status-completed {
+        background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+        color: #7c3aed;
+    }
+    
+    .status-cancelled {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        color: #dc2626;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        color: white;
+    }
+    
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #059669;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+    
+    .btn-secondary:hover {
+        background: var(--gray-300);
+        color: var(--gray-800);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--gray-500);
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--gray-700);
+    }
+    
+    .empty-state-text {
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .management-container {
+            margin: 1rem auto;
+        }
+        
+        .dashboard-hero {
+            padding: 2rem 1rem;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .quick-actions {
+            flex-direction: column;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .filters-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .section-header {
+            padding: 1.5rem;
+        }
+        
+        .appointments-table th,
+        .appointments-table td {
+            padding: 1rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    
+    /* Loading States */
+    .loading-card {
+        background: var(--gray-100);
+        border-radius: var(--radius);
+        height: 20px;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .loading-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-100);
+    }
+    
+    .loading-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gray-200);
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .loading-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    /* Additional Button Styles */
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-warning:hover {
+        background: #e0a800;
+        color: #212529;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+        color: white;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .management-container {
+            padding: 0 0.5rem;
+        }
+        
+        .dashboard-hero {
+            padding: 2rem 1rem;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .appointments-table {
+            font-size: 0.9rem;
+        }
+        
+        .appointments-table th,
+        .appointments-table td {
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            margin: 0.125rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="management-container">
+    <!-- Modern Dashboard Hero -->
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <i class="fas fa-video"></i> Appointment Dashboard
+            </h1>
+            <p class="hero-subtitle">
+                Manage your teleappointments and video consultations in one place
+            </p>
+            <div class="quick-actions">
+                <a href="{% url 'patients:teleappointment_booking' %}" class="quick-action-btn">
+                    <i class="fas fa-plus"></i> Book New Appointment
+                </a>
+                <a href="#upcoming" class="quick-action-btn">
+                    <i class="fas fa-clock"></i> View Upcoming
+                </a>
+                <a href="#history" class="quick-action-btn">
+                    <i class="fas fa-history"></i> Appointment History
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Stats Dashboard -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-number">{{ appointments|length }}</div>
+                    <div class="stat-label">Total Appointments</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-arrow-up"></i> All time
+                    </div>
+                </div>
+                <div class="stat-icon scheduled">
+                    <i class="fas fa-calendar"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-number">
+                        {% with scheduled_count=0 %}
+                            {% for appointment in appointments %}
+                                {% if appointment.tele_status == 'scheduled' %}
+                                    {% with scheduled_count=scheduled_count|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ scheduled_count }}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-label">Scheduled</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-clock"></i> Upcoming
+                    </div>
+                </div>
+                <div class="stat-icon ready">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-number">
+                        {% with progress_count=0 %}
+                            {% for appointment in appointments %}
+                                {% if appointment.tele_status == 'in_progress' %}
+                                    {% with progress_count=progress_count|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ progress_count }}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-video"></i> Active now
+                    </div>
+                </div>
+                <div class="stat-icon progress">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-number">
+                        {% with ready_count=0 %}
+                            {% for appointment in appointments %}
+                                {% if appointment.tele_status == 'ready' %}
+                                    {% with ready_count=ready_count|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ ready_count }}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-label">Ready to Join</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-arrow-right"></i> Available
+                    </div>
+                </div>
+                <div class="stat-icon completed">
+                    <i class="fas fa-user-md"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section">
+        <div class="filters-row">
+            <div class="filter-group">
+                <label class="filter-label">Search Appointments</label>
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search by patient name, doctor, or department..." id="searchInput">
+                </div>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Status Filter</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="ready">Ready</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Date Range</label>
+                <input type="date" class="form-control" id="dateFilter">
+            </div>
+            <button class="filter-btn" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Modern Appointments Table -->
+    <div class="appointments-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-list"></i> Your Appointments
+            </h2>
+        </div>
+        
+        {% if appointments %}
+            <div class="table-container">
+                <table class="appointments-table">
+                    <thead>
+                        <tr>
+                            <th>Patient Details</th>
+                            <th>Healthcare Provider</th>
+                            <th>Department</th>
+                            <th>Scheduled Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments %}
+                            <tr class="appointment-row" data-status="{{ appointment.tele_status }}">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                            {{ appointment.queue_entry.patient.name|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--gray-800);">
+                                                {{ appointment.queue_entry.patient.name }}
+                                            </div>
+                                            <div style="font-size: 0.875rem; color: var(--gray-500);">
+                                                <i class="fas fa-phone me-1"></i>{{ appointment.queue_entry.patient.phone_number }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if appointment.queue_entry.assigned_doctor %}
+                                        <div style="font-weight: 600; color: var(--gray-800);">
+                                            Dr. {{ appointment.queue_entry.assigned_doctor.name }}
+                                        </div>
+                                        <div style="font-size: 0.875rem; color: var(--gray-500);">
+                                            {{ appointment.queue_entry.assigned_doctor.specialization|default:"General Practice" }}
+                                        </div>
+                                    {% else %}
+                                        <div style="color: var(--gray-500); font-style: italic;">
+                                            <i class="fas fa-clock me-1"></i>Doctor will be assigned
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <i class="fas fa-hospital text-primary"></i>
+                                        <span style="font-weight: 500;">{{ appointment.queue_entry.department.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; color: var(--gray-800);">
+                                        {{ appointment.scheduled_time|date:"M d, Y" }}
+                                    </div>
+                                    <div style="font-size: 0.875rem; color: var(--gray-500);">
+                                        <i class="fas fa-clock me-1"></i>{{ appointment.scheduled_time|time:"g:i A" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if appointment.tele_status == 'scheduled' %}
+                                        <span class="status-badge status-scheduled">
+                                            <i class="fas fa-calendar-check"></i> Scheduled
+                                        </span>
+                                    {% elif appointment.tele_status == 'ready' %}
+                                        <span class="status-badge status-ready">
+                                            <i class="fas fa-play-circle"></i> Ready
+                                        </span>
+                                    {% elif appointment.tele_status == 'in_progress' %}
+                                        <span class="status-badge status-in-progress">
+                                            <i class="fas fa-video"></i> In Progress
+                                        </span>
+                                    {% elif appointment.tele_status == 'completed' %}
+                                        <span class="status-badge status-completed">
+                                            <i class="fas fa-check-circle"></i> Completed
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-cancelled">
+                                            <i class="fas fa-times-circle"></i> {{ appointment.tele_status|title }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        {% if appointment.tele_status == 'ready' or appointment.tele_status == 'in_progress' %}
+                                            <a href="{% url 'patients:video_call_room' appointment.meeting_id %}" 
+                                               class="action-btn btn-success">
+                                                <i class="fas fa-video"></i> Join Call
+                                            </a>
+                                        {% endif %}
+                                        
+                                        <button class="action-btn btn-primary" 
+                                                data-appointment-id="{{ appointment.id }}"
+                                                onclick="viewDetails(this.dataset.appointmentId)">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                        
+                                        {% if appointment.tele_status == 'scheduled' %}
+                                            <button class="action-btn btn-secondary" 
+                                                    data-appointment-id="{{ appointment.id }}"
+                                                    onclick="rescheduleAppointment(this.dataset.appointmentId)">
+                                                <i class="fas fa-calendar-alt"></i> Reschedule
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <h3 class="empty-state-title">No Appointments Found</h3>
+                <p class="empty-state-text">
+                    You don't have any teleappointments scheduled yet.<br>
+                    Book your first video consultation to get started.
+                </p>
+                <a href="{% url 'patients:teleappointment_booking' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Book Your First Appointment
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

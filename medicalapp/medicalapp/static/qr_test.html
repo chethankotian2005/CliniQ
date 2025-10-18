@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple QR Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .btn { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; }
+        .alert { padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border: 2px dashed #28a745; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 QR Scanner Test Tool</h1>
+        
+        <div class="alert alert-info">
+            <strong>Test QR Code:</strong> CLINIQ:BOOKING:12:65333ef0<br>
+            <strong>Note:</strong> This page tests QR functionality without authentication.
+        </div>
+
+        <h3>📷 Camera QR Scanner</h3>
+        <div id="reader"></div>
+        <button id="start-camera" class="btn">Start Camera</button>
+        <button id="stop-camera" class="btn" style="background: #dc3545;" disabled>Stop Camera</button>
+        <div id="camera-result"></div>
+
+        <h3>⌨️ Manual QR Testing</h3>
+        <input type="text" id="manual-qr" class="form-control" placeholder="Paste QR code: CLINIQ:BOOKING:12:65333ef0" value="CLINIQ:BOOKING:12:65333ef0">
+        <button id="test-qr" class="btn">Test QR Code</button>
+        <div id="manual-result"></div>
+
+        <h3>📋 Debug Log</h3>
+        <div id="debug-log" style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; min-height: 100px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        let scanner = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Page loaded - checking QR library...');
+            
+            if (typeof Html5QrcodeScanner !== 'undefined') {
+                log('✅ HTML5 QR Code library loaded successfully');
+            } else {
+                log('❌ HTML5 QR Code library failed to load');
+            }
+        });
+        
+        // Start camera
+        document.getElementById('start-camera').addEventListener('click', function() {
+            log('Starting camera scanner...');
+            
+            try {
+                scanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                }, false);
+                
+                scanner.render(
+                    function(decodedText) {
+                        log(`QR Code detected: ${decodedText}`);
+                        showResult('camera-result', `QR Code detected: ${decodedText}`, 'success');
+                        testQRCode(decodedText);
+                    },
+                    function(error) {
+                        // Silent for scan errors
+                    }
+                );
+                
+                document.getElementById('start-camera').disabled = true;
+                document.getElementById('stop-camera').disabled = false;
+                log('Camera scanner started successfully');
+                
+            } catch (error) {
+                log(`❌ Error starting camera: ${error.message}`);
+                showResult('camera-result', `Error: ${error.message}`, 'danger');
+            }
+        });
+        
+        // Stop camera
+        document.getElementById('stop-camera').addEventListener('click', function() {
+            if (scanner) {
+                scanner.clear();
+                scanner = null;
+            }
+            document.getElementById('start-camera').disabled = false;
+            document.getElementById('stop-camera').disabled = true;
+            log('Camera scanner stopped');
+            showResult('camera-result', 'Camera stopped', 'info');
+        });
+        
+        // Manual test
+        document.getElementById('test-qr').addEventListener('click', function() {
+            const qrCode = document.getElementById('manual-qr').value.trim();
+            if (!qrCode) {
+                showResult('manual-result', 'Please enter a QR code', 'danger');
+                return;
+            }
+            
+            log(`Testing QR code manually: ${qrCode}`);
+            testQRCode(qrCode);
+        });
+        
+        // Test QR code
+        function testQRCode(qrCode) {
+            log(`Sending API request for QR: ${qrCode}`);
+            showResult('manual-result', 'Processing QR code...', 'info');
+            
+            // Get CSRF token
+            const csrfToken = getCookie('csrftoken');
+            
+            fetch('/patients/api/booking/qr-scan/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ qr_code: qrCode })
+            })
+            .then(response => {
+                log(`API response status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                log(`API response: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    const message = `
+                        <strong>✅ QR Code Processed Successfully!</strong><br>
+                        Patient: ${data.patient_name}<br>
+                        Token: ${data.token_number}<br>
+                        Department: ${data.department}<br>
+                        Message: ${data.message}
+                    `;
+                    showResult('manual-result', message, 'success');
+                } else {
+                    showResult('manual-result', `❌ Error: ${data.message}`, 'danger');
+                }
+            })
+            .catch(error => {
+                log(`❌ Network error: ${error.message}`);
+                showResult('manual-result', `❌ Network Error: ${error.message}`, 'danger');
+            });
+        }
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

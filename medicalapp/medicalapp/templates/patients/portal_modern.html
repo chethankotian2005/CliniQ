@@ -1,0 +1,899 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Portal - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --danger-gradient: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+        --card-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        --hover-transform: translateY(-5px);
+    }
+    
+    body {
+        background: linear-gradient(to right, #f8f9fa 0%, #e9ecef 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Modern Card Styles */
+    .modern-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        background: white;
+    }
+    
+    .modern-card:hover {
+        transform: var(--hover-transform);
+        box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+    }
+    
+    /* Gradient Headers */
+    .gradient-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Quick Action Cards */
+    .action-card {
+        border-radius: 15px;
+        border: none;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.5s;
+    }
+    
+    .action-card:hover::before {
+        left: 100%;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    
+    .action-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Navigation Tabs */
+    .nav-tabs-modern {
+        border-bottom: none;
+        gap: 0.5rem;
+    }
+    
+    .nav-tabs-modern .nav-link {
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        color: #6c757d;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        margin-bottom: 0.5rem;
+    }
+    
+    .nav-tabs-modern .nav-link:hover {
+        background: #f8f9fa;
+        color: #667eea;
+    }
+    
+    .nav-tabs-modern .nav-link.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: inline-block;
+    }
+    
+    .status-normal { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+    .status-abnormal { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+    .status-critical { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); color: white; }
+    .status-pending { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .status-scheduled { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+    .status-completed { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+    
+    /* Modern Buttons */
+    .btn-modern {
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .btn-gradient-primary {
+        background: var(--primary-gradient);
+        color: white;
+    }
+    
+    .btn-gradient-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    
+    .btn-gradient-info {
+        background: var(--info-gradient);
+        color: white;
+    }
+    
+    /* Lab Test Card */
+    .lab-test-card {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .lab-test-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        transform: translateX(5px);
+    }
+    
+    /* Result Card */
+    .result-card {
+        border-left: 4px solid #667eea;
+        border-radius: 10px;
+        padding: 1.5rem;
+        background: white;
+        margin-bottom: 1rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .result-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        transform: translateX(5px);
+    }
+    
+    /* Loading Animation */
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Fade In Animation */
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Stats Card */
+    .stats-card {
+        border-radius: 15px;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .gradient-header {
+            padding: 1.5rem;
+        }
+        
+        .action-card {
+            margin-bottom: 1rem;
+        }
+        
+        .nav-tabs-modern .nav-link {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Welcome Header -->
+    <div class="gradient-header fade-in">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="fas fa-heartbeat me-3"></i>
+                    Welcome to CliniQ Health Portal
+                </h1>
+                <p class="lead mb-0">Manage your health, book appointments, and access your medical records</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-none d-md-block">
+                    <p class="mb-1"><i class="fas fa-calendar me-2"></i>{{ current_date }}</p>
+                    <p class="mb-0"><i class="fas fa-clock me-2"></i><span id="current-time"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4 mb-4 fade-in">
+        <div class="col-lg-3 col-md-6">
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h5 class="fw-bold">Book Appointment</h5>
+                <p class="text-muted small mb-3">Schedule with our specialists</p>
+                <button class="btn btn-modern btn-gradient-primary btn-sm" onclick="showBookingSection()">
+                    <i class="fas fa-plus me-2"></i>Book Now
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h5 class="fw-bold">Lab Tests</h5>
+                <p class="text-muted small mb-3">View results & book tests</p>
+                <button class="btn btn-modern btn-gradient-success btn-sm" onclick="showLabsSection()">
+                    <i class="fas fa-vials me-2"></i>View Labs
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h5 class="fw-bold">Queue Status</h5>
+                <p class="text-muted small mb-3">Check your waiting time</p>
+                <button class="btn btn-modern btn-gradient-info btn-sm" data-bs-toggle="modal" data-bs-target="#queueModal">
+                    <i class="fas fa-search me-2"></i>Check Status
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h5 class="fw-bold">AI Assistant</h5>
+                <p class="text-muted small mb-3">Get instant health guidance</p>
+                <button class="btn btn-modern btn-gradient-primary btn-sm" onclick="openChatbot()">
+                    <i class="fas fa-comments me-2"></i>Chat Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="modern-card fade-in">
+        <ul class="nav nav-tabs nav-tabs-modern p-3" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button">
+                    <i class="fas fa-chart-line me-2"></i>Dashboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button">
+                    <i class="fas fa-calendar me-2"></i>Appointments
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="labs-tab" data-bs-toggle="tab" data-bs-target="#labs" type="button">
+                    <i class="fas fa-flask me-2"></i>Lab Results
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hospitals-tab" data-bs-toggle="tab" data-bs-target="#hospitals" type="button">
+                    <i class="fas fa-hospital me-2"></i>Hospitals
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="lab-facilities-tab" data-bs-toggle="tab" data-bs-target="#lab-facilities" type="button">
+                    <i class="fas fa-flask me-2"></i>Lab Facilities
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="chatbot-tab" data-bs-toggle="tab" data-bs-target="#chatbot" type="button">
+                    <i class="fas fa-robot me-2"></i>AI Health Assistant
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content p-4" id="mainTabsContent">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <h3 class="mb-4"><i class="fas fa-chart-line text-primary me-2"></i>Your Health Dashboard</h3>
+                
+                <!-- Stats Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card" style="background: var(--primary-gradient);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="fw-bold mb-0" id="total-appointments">0</h3>
+                                    <p class="mb-0 opacity-75">Total Appointments</p>
+                                </div>
+                                <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="fw-bold mb-0" id="pending-labs">0</h3>
+                                    <p class="mb-0 opacity-75">Pending Lab Tests</p>
+                                </div>
+                                <i class="fas fa-flask fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card" style="background: var(--info-gradient);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="fw-bold mb-0" id="new-results">0</h3>
+                                    <p class="mb-0 opacity-75">New Lab Results</p>
+                                </div>
+                                <i class="fas fa-file-medical fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card" style="background: var(--warning-gradient);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="fw-bold mb-0" id="upcoming">0</h3>
+                                    <p class="mb-0 opacity-75">Upcoming Visits</p>
+                                </div>
+                                <i class="fas fa-clock fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h5 class="mb-3"><i class="fas fa-history text-primary me-2"></i>Recent Appointments</h5>
+                        <div id="recent-appointments-list">
+                            <p class="text-muted">No recent appointments</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h5 class="mb-3"><i class="fas fa-vial text-success me-2"></i>Recent Lab Results</h5>
+                        <div id="recent-labs-list">
+                            <p class="text-muted">No recent lab results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointments Tab -->
+            <div class="tab-pane fade" id="appointments" role="tabpanel">
+                <h3 class="mb-4"><i class="fas fa-calendar-alt text-primary me-2"></i>My Appointments</h3>
+                <div id="appointments-list">
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                        <p class="text-muted">No appointments found</p>
+                        <button class="btn btn-modern btn-gradient-primary" onclick="showBookingSection()">
+                            <i class="fas fa-plus me-2"></i>Book New Appointment
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Labs Tab -->
+            <div class="tab-pane fade" id="labs" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="mb-0"><i class="fas fa-flask text-success me-2"></i>Laboratory Services</h3>
+                    <button class="btn btn-modern btn-gradient-success" onclick="showAvailableTests()">
+                        <i class="fas fa-plus me-2"></i>Book Lab Test
+                    </button>
+                </div>
+
+                <!-- Lab Navigation -->
+                <ul class="nav nav-pills mb-4">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="pill" href="#lab-results">
+                            <i class="fas fa-file-medical me-2"></i>My Results
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="pill" href="#lab-orders">
+                            <i class="fas fa-list me-2"></i>Pending Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="pill" href="#lab-history">
+                            <i class="fas fa-history me-2"></i>History
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Lab Results -->
+                    <div class="tab-pane fade show active" id="lab-results">
+                        <div id="lab-results-list">
+                            <!-- Sample Lab Result -->
+                            <div class="result-card">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="fw-bold mb-2">
+                                            <i class="fas fa-vial text-success me-2"></i>
+                                            Complete Blood Count (CBC)
+                                        </h5>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-calendar me-2"></i>Completed: Oct 5, 2025
+                                        </p>
+                                        <p class="text-muted small mb-0">
+                                            <i class="fas fa-user-md me-2"></i>Dr. Sarah Johnson
+                                        </p>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <span class="status-badge status-normal">
+                                            <i class="fas fa-check-circle me-1"></i>Normal
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <button class="btn btn-sm btn-modern btn-gradient-info" onclick="viewLabResult(1)">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="downloadLabResult(1)">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="result-card">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="fw-bold mb-2">
+                                            <i class="fas fa-heartbeat text-danger me-2"></i>
+                                            Lipid Profile
+                                        </h5>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-calendar me-2"></i>Completed: Oct 3, 2025
+                                        </p>
+                                        <p class="text-muted small mb-0">
+                                            <i class="fas fa-user-md me-2"></i>Dr. Michael Chen
+                                        </p>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <span class="status-badge status-abnormal">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Abnormal
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <button class="btn btn-sm btn-modern btn-gradient-info" onclick="viewLabResult(2)">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="downloadLabResult(2)">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Orders -->
+                    <div class="tab-pane fade" id="lab-orders">
+                        <div id="pending-orders-list">
+                            <div class="lab-test-card">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="fw-bold mb-2">Thyroid Function Test (TFT)</h5>
+                                        <p class="text-muted small mb-1">
+                                            <i class="fas fa-calendar me-2"></i>Scheduled: Oct 12, 2025 at 8:00 AM
+                                        </p>
+                                        <p class="text-muted small mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>Fasting required (12 hours)
+                                        </p>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <span class="status-badge status-scheduled">
+                                            <i class="fas fa-clock me-1"></i>Scheduled
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <button class="btn btn-sm btn-modern btn-gradient-primary">
+                                            <i class="fas fa-edit me-1"></i>Reschedule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lab History -->
+                    <div class="tab-pane fade" id="lab-history">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Test Name</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Doctor</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Complete Blood Count</td>
+                                                <td>Oct 5, 2025</td>
+                                                <td><span class="status-badge status-completed">Completed</span></td>
+                                                <td>Dr. Sarah Johnson</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospitals Tab -->
+            <div class="tab-pane fade" id="hospitals" role="tabpanel">
+                <h3 class="mb-4"><i class="fas fa-hospital text-info me-2"></i>Select Hospital</h3>
+                <div id="hospitals-list">
+                    <p class="text-muted">Loading hospitals...</p>
+                </div>
+            </div>
+
+            <!-- Lab Facilities Tab -->
+            <div class="tab-pane fade" id="lab-facilities" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="mb-0"><i class="fas fa-flask text-success me-2"></i>Select Lab Facility</h3>
+                    <button class="btn btn-modern btn-gradient-info btn-sm" onclick="getNearbyLabs()">
+                        <i class="fas fa-location-arrow me-2"></i>Find Nearby Labs
+                    </button>
+                </div>
+                
+                <div id="lab-facilities-list">
+                    <!-- Lab facilities will be loaded here -->
+                    <div class="row g-4">
+                        <!-- Sample Lab Facility Card -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="modern-card p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="fw-bold mb-1">Dr. Lal PathLabs</h5>
+                                        <p class="text-muted small mb-0">Central Lab - Downtown</p>
+                                    </div>
+                                    <span class="badge bg-success">Verified</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-star text-warning me-1"></i>
+                                        <strong>4.8</strong>
+                                        <span class="text-muted small ms-2">(256 reviews)</span>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-vial me-2"></i>150+ Tests Available
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="text-muted small mb-1">
+                                        <i class="fas fa-map-marker-alt me-2"></i>MG Road, Andheri West
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-phone me-2"></i>+91 22 1234 5678
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <span class="badge bg-info me-1"><i class="fas fa-home me-1"></i>Home Collection</span>
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-percentage me-1"></i>15% Off</span>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-modern btn-gradient-success flex-fill" onclick="viewLabFacility('lab-id')">
+                                        <i class="fas fa-eye me-1"></i>View Tests
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-directions"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chatbot Tab -->
+            <div class="tab-pane fade" id="chatbot" role="tabpanel">
+                <h3 class="mb-4"><i class="fas fa-robot text-primary me-2"></i>AI Health Assistant</h3>
+                <div class="modern-card p-4">
+                    <div id="chatbot-container" style="min-height: 500px;">
+                        <!-- Chatbot will be loaded here -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-robot fa-5x text-primary mb-3"></i>
+                            <h4>How can I help you today?</h4>
+                            <p class="text-muted">Ask me about symptoms, departments, or booking appointments</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals and Scripts -->
+{% include 'patients/portal_modals.html' %}
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    document.getElementById('current-time').textContent = now.toLocaleTimeString();
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// Navigation Functions
+function showBookingSection() {
+    const tab = new bootstrap.Tab(document.getElementById('hospitals-tab'));
+    tab.show();
+}
+
+function showLabsSection() {
+    const tab = new bootstrap.Tab(document.getElementById('labs-tab'));
+    tab.show();
+}
+
+function openChatbot() {
+    const tab = new bootstrap.Tab(document.getElementById('chatbot-tab'));
+    tab.show();
+}
+
+// Lab Functions
+function viewLabResult(id) {
+    // Implementation for viewing lab result details
+    alert('Viewing lab result #' + id);
+}
+
+function downloadLabResult(id) {
+    // Implementation for downloading lab result
+    alert('Downloading lab result #' + id);
+}
+
+function showAvailableTests() {
+    // Show available tests modal
+    alert('Show available lab tests');
+}
+
+// Add smooth scroll behavior
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+
+// Animate cards on scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('fade-in');
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.modern-card, .action-card, .result-card').forEach(card => {
+    observer.observe(card);
+});
+
+// Lab Facility Functions
+function getNearbyLabs() {
+    if (navigator.geolocation) {
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                loadNearbyLabs(position.coords.latitude, position.coords.longitude);
+            },
+            error => {
+                hideLoading();
+                showError('Unable to get your location. Showing all labs.');
+                loadAllLabs();
+            }
+        );
+    } else {
+        showInfo('Geolocation not supported. Showing all labs.');
+        loadAllLabs();
+    }
+}
+
+function loadNearbyLabs(latitude, longitude) {
+    fetch('/patients/api/labs/nearby/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            latitude: latitude,
+            longitude: longitude
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            displayLabFacilities(data.labs);
+        } else {
+            showError(data.message || 'Failed to load labs');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Error loading labs');
+        console.error('Error:', error);
+    });
+}
+
+function loadAllLabs() {
+    // Load all lab facilities without distance sorting
+    showInfo('Loading all lab facilities...');
+    // Implementation would fetch from a different endpoint or load from context
+}
+
+function displayLabFacilities(labs) {
+    const container = document.getElementById('lab-facilities-list');
+    
+    if (!labs || labs.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-flask fa-4x text-muted mb-3"></i>
+                <p class="text-muted">No lab facilities found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row g-4">';
+    
+    labs.forEach(lab => {
+        html += `
+            <div class="col-md-6 col-lg-4">
+                <div class="modern-card p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">${lab.brand_name || lab.name}</h5>
+                            <p class="text-muted small mb-0">${lab.name}</p>
+                        </div>
+                        ${lab.distance ? `<span class="badge bg-primary">${lab.distance} km</span>` : ''}
+                    </div>
+                    
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas fa-star text-warning me-1"></i>
+                            <strong>${lab.rating}</strong>
+                            <span class="text-muted small ms-2">(reviews)</span>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-vial me-2"></i>${lab.tests_count || 0}+ Tests Available
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-map-marker-alt me-2"></i>${lab.city}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-phone me-2"></i>${lab.phone}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        ${lab.home_sample_collection ? '<span class="badge bg-info me-1"><i class="fas fa-home me-1"></i>Home Collection</span>' : ''}
+                        ${lab.discount_percentage > 0 ? `<span class="badge bg-warning text-dark"><i class="fas fa-percentage me-1"></i>${lab.discount_percentage}% Off</span>` : ''}
+                        ${lab.is_24_hours ? '<span class="badge bg-success"><i class="fas fa-clock me-1"></i>24/7</span>' : ''}
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-modern btn-gradient-success flex-fill" onclick="viewLabFacility('${lab.id}')">
+                            <i class="fas fa-eye me-1"></i>View Tests
+                        </button>
+                        ${lab.distance ? `<button class="btn btn-sm btn-outline-primary" onclick="getDirections(${lab.latitude}, ${lab.longitude})">
+                            <i class="fas fa-directions"></i>
+                        </button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function viewLabFacility(facilityId) {
+    // Navigate to lab facility detail page
+    window.location.href = `/patients/lab-facility/${facilityId}/`;
+}
+
+function getDirections(lat, lng) {
+    // Open Google Maps with directions
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+}
+
+</script>
+{% endblock %}

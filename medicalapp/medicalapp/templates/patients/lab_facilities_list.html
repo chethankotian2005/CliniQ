@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Lab Facilities - CliniQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .facility-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .facility-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    
+    .facility-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .filter-btn {
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        border: 2px solid #e9ecef;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-btn:hover, .filter-btn.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 fw-bold">
+                <i class="fas fa-flask text-success me-3"></i>
+                Diagnostic Lab Facilities
+            </h1>
+            <p class="lead text-muted">Select a trusted lab facility for your diagnostic tests</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary btn-lg" onclick="getNearbyLabs()">
+                <i class="fas fa-location-arrow me-2"></i>Find Nearby
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                <button class="filter-btn active" data-filter="all">
+                    <i class="fas fa-th-large me-2"></i>All Labs
+                </button>
+                <button class="filter-btn" data-filter="verified">
+                    <i class="fas fa-check-circle me-2"></i>Verified Only
+                </button>
+                <button class="filter-btn" data-filter="24hours">
+                    <i class="fas fa-clock me-2"></i>24/7 Open
+                </button>
+                <button class="filter-btn" data-filter="home-collection">
+                    <i class="fas fa-home me-2"></i>Home Collection
+                </button>
+                <button class="filter-btn" data-filter="discount">
+                    <i class="fas fa-percent me-2"></i>Offers Available
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Facilities Grid -->
+    <div class="row g-4" id="facilities-grid">
+        {% for lab in lab_facilities %}
+        <div class="col-md-6 col-lg-4" 
+             data-verified="{{ lab.is_verified }}"
+             data-24hours="{{ lab.is_24_hours }}"
+             data-home="{{ lab.home_sample_collection }}"
+             data-discount="{{ lab.discount_percentage|default:0 }}">
+            <div class="facility-card">
+                {% if lab.images.all %}
+                    <img src="{{ lab.images.first.image.url }}" alt="{{ lab.name }}" 
+                         class="card-img-top" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top bg-gradient-success d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="fas fa-flask fa-5x text-white opacity-50"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            {% if lab.brand_name %}
+                                <h5 class="fw-bold mb-0">{{ lab.brand_name }}</h5>
+                                <p class="text-muted small">{{ lab.name }}</p>
+                            {% else %}
+                                <h5 class="fw-bold">{{ lab.name }}</h5>
+                            {% endif %}
+                        </div>
+                        {% if lab.is_verified %}
+                            <span class="facility-badge bg-success text-white">
+                                <i class="fas fa-check-circle me-1"></i>Verified
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Rating -->
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star text-warning me-1"></i>
+                            <strong>{{ lab.rating }}</strong>
+                            <span class="text-muted small ms-2">({{ lab.total_reviews }} reviews)</span>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-vial me-2"></i>{{ lab.get_available_tests_count }}+ Tests Available
+                        </div>
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="mb-3">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ lab.address|truncatewords:8 }}
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-phone me-2"></i>{{ lab.phone }}
+                        </div>
+                    </div>
+                    
+                    <!-- Categories -->
+                    <div class="mb-3">
+                        <small class="text-muted">Available:</small>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            {% for category in lab.get_test_categories %}
+                                <span class="badge bg-light text-dark border">{{ category }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Features -->
+                    <div class="mb-3">
+                        {% if lab.home_sample_collection %}
+                            <span class="facility-badge bg-info text-white me-1">
+                                <i class="fas fa-home me-1"></i>Home Collection
+                            </span>
+                        {% endif %}
+                        {% if lab.is_24_hours %}
+                            <span class="facility-badge bg-success text-white me-1">
+                                <i class="fas fa-clock me-1"></i>24/7
+                            </span>
+                        {% endif %}
+                        {% if lab.discount_percentage > 0 %}
+                            <span class="facility-badge bg-warning text-dark">
+                                <i class="fas fa-percent me-1"></i>{{ lab.discount_percentage }}% Off
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Accreditation -->
+                    {% if lab.accreditation %}
+                        <div class="mb-3">
+                            <small class="text-success">
+                                <i class="fas fa-certificate me-1"></i>{{ lab.accreditation }}
+                            </small>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'patients:lab_facility_detail' lab.id %}" 
+                           class="btn btn-success flex-fill">
+                            <i class="fas fa-eye me-2"></i>View Tests
+                        </a>
+                        {% if lab.latitude and lab.longitude %}
+                            <a href="https://www.google.com/maps/dir/?api=1&destination={{ lab.latitude }},{{ lab.longitude }}" 
+                               target="_blank"
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-directions"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-flask fa-5x text-muted mb-3"></i>
+                <h4>No Lab Facilities Available</h4>
+                <p class="text-muted">Lab facilities will be added soon. Please check back later.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+// Filter functionality
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Remove active class from all buttons
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Add active class to clicked button
+        this.classList.add('active');
+        
+        const filter = this.getAttribute('data-filter');
+        const cards = document.querySelectorAll('#facilities-grid > div');
+        
+        cards.forEach(card => {
+            if (filter === 'all') {
+                card.style.display = 'block';
+            } else if (filter === 'verified') {
+                card.style.display = card.getAttribute('data-verified') === 'True' ? 'block' : 'none';
+            } else if (filter === '24hours') {
+                card.style.display = card.getAttribute('data-24hours') === 'True' ? 'block' : 'none';
+            } else if (filter === 'home-collection') {
+                card.style.display = card.getAttribute('data-home') === 'True' ? 'block' : 'none';
+            } else if (filter === 'discount') {
+                card.style.display = parseFloat(card.getAttribute('data-discount')) > 0 ? 'block' : 'none';
+            }
+        });
+    });
+});
+
+// Nearby labs functionality
+function getNearbyLabs() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                window.location.href = `/patients/lab-facilities/?lat=${lat}&lng=${lng}`;
+            },
+            error => {
+                alert('Unable to get your location. Please enable location services.');
+            }
+        );
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+</script>
+{% endblock %}

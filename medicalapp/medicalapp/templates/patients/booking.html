@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment Online{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-calendar-plus"></i>
+                        Book Your Appointment Online
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>How it works:</strong>
+                        <ol class="mb-0 mt-2">
+                            <li>Fill out the form below to book your appointment</li>
+                            <li>Receive a unique QR code</li>
+                            <li>Come to the hospital and scan the QR code at reception</li>
+                            <li>Get your token number and join the queue</li>
+                        </ol>
+                    </div>
+
+                    <form id="bookingForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="phone_number" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="age" class="form-label">Age</label>
+                                    <input type="number" class="form-control" id="age" name="age" min="1" max="120">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="gender" class="form-label">Gender</label>
+                                    <select class="form-control" id="gender" name="gender">
+                                        <option value="">Select Gender</option>
+                                        <option value="M">Male</option>
+                                        <option value="F">Female</option>
+                                        <option value="O">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="department_id" class="form-label">Department *</label>
+                                    <select class="form-control" id="department_id" name="department_id" required>
+                                        <option value="">Select Department</option>
+                                        {% for department in departments %}
+                                        <option value="{{ department.id }}">{{ department.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="doctor_id" class="form-label">Preferred Doctor</label>
+                                    <select class="form-control" id="doctor_id" name="doctor_id">
+                                        <option value="">Any Available Doctor</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="booking_date" class="form-label">Preferred Date</label>
+                                    <input type="date" class="form-control" id="booking_date" name="booking_date">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="time_slot" class="form-label">Preferred Time</label>
+                                    <select class="form-control" id="time_slot" name="time_slot">
+                                        <option value="">Any Time</option>
+                                        <!-- Precise slots will be populated dynamically from server -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                            <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact">
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific requirements or symptoms you'd like to mention..."></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-control" id="priority" name="priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">High Priority</option>
+                                <option value="emergency">Emergency</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-check"></i>
+                                Book Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Creating your booking...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const dateInput = document.getElementById('booking_date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+
+    // Load doctors when department changes
+    const departmentSelect = document.getElementById('department_id');
+    const doctorSelect = document.getElementById('doctor_id');
+    const timeSlotSelect = document.getElementById('time_slot');
+    const dateInputEl = document.getElementById('booking_date');
+
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        doctorSelect.innerHTML = '<option value="">Any Available Doctor</option>';
+        
+        if (departmentId) {
+            fetch(`/patients/api/department/${departmentId}/doctors/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.doctors.forEach(doctor => {
+                            const option = document.createElement('option');
+                            option.value = doctor.id;
+                            option.textContent = `Dr. ${doctor.name} - ${doctor.specialty}`;
+                            doctorSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading doctors:', error));
+            // Fetch available slots for selected department and current date
+            fetchAvailableSlots(departmentId, dateInputEl.value || today);
+        }
+    });
+
+    // When date changes, refresh available slots for selected department
+    dateInputEl.addEventListener('change', function() {
+        const departmentId = departmentSelect.value;
+        if (departmentId) {
+            fetchAvailableSlots(departmentId, this.value);
+        }
+    });
+
+    function fetchAvailableSlots(departmentId, date) {
+        timeSlotSelect.innerHTML = '<option value="">Any Time</option>';
+        if (!departmentId) return;
+
+        const encodedDate = encodeURIComponent(date);
+        fetch(`/patients/api/booking/slots/${departmentId}/?date=${encodedDate}`)
+            .then(resp => resp.json())
+            .then(result => {
+                if (result.success && Array.isArray(result.time_slots)) {
+                    result.time_slots.forEach(slotObj => {
+                        const opt = document.createElement('option');
+                        opt.value = slotObj.slot; // precise slot string like '09:00-10:00'
+                        opt.textContent = `${slotObj.slot} (${slotObj.bookings} booked)`;
+                        if (!slotObj.available) opt.disabled = true;
+                        timeSlotSelect.appendChild(opt);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching slots:', err);
+            });
+    }
+
+    // Handle form submission
+    const form = document.getElementById('bookingForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Ensure booking_date is set (browser may leave empty)
+        if (!data.booking_date) {
+            data.booking_date = dateInput.value;
+        }
+        
+        // Show loading modal
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        loadingModal.show();
+        
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        // Try to include CSRF token if available in cookies
+        const getCookie = (name) => {
+            const val = `; ${document.cookie}`;
+            const parts = val.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        };
+
+        const csrftoken = getCookie('csrftoken');
+        if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+
+        fetch('/patients/api/booking/create/', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingModal.hide();
+            
+            if (data.success) {
+                // Redirect to confirmation page
+                window.location.href = `/patients/booking/confirmation/${data.booking_id}/`;
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            loadingModal.hide();
+            console.error('Error:', error);
+            alert('An error occurred while creating your booking. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

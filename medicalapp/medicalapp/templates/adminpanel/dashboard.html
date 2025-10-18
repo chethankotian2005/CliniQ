@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - CliniQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="bi bi-shield-lock-fill me-2"></i>
+                Admin Dashboard
+            </span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">
+                            <i class="bi bi-person-circle me-2"></i>{{ user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">
+                            <i class="bi bi-gear me-2"></i>Django Admin
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'adminpanel:logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-light btn-sm">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Patients Today</h6>
+                    <h2 class="mb-0">{{ total_patients_today }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Consultations Done</h6>
+                    <h2 class="mb-0">{{ consultations_done }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Currently Waiting</h6>
+                    <h2 class="mb-0">{{ currently_waiting }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Active Doctors</h6>
+                    <h2 class="mb-0">{{ active_doctors }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        Patient QR Code Scanner
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-3">
+                                <i class="fas fa-info-circle text-info me-2"></i>
+                                <strong>Scan patient QR codes to check them in and assign token numbers.</strong>
+                            </p>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-grid">
+                                        <a href="{% url 'adminpanel:qr_scanner' %}" class="btn btn-success btn-lg">
+                                            <i class="fas fa-camera me-2"></i>
+                                            Open QR Scanner
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-success btn-lg" onclick="openQuickScanner()">
+                                            <i class="fas fa-keyboard me-2"></i>
+                                            Manual Entry
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-success">
+                                        <i class="fas fa-mobile-alt me-2"></i>
+                                        How it works
+                                    </h6>
+                                    <ol class="text-start small">
+                                        <li>Patient shows QR code from their booking</li>
+                                        <li>Click "Open QR Scanner" above</li>
+                                        <li>Scan the QR code with camera</li>
+                                        <li>Patient gets token number automatically</li>
+                                        <li>Patient joins the queue</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Overview -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-hospital me-2"></i>Department Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Department</th>
+                                    <th>Waiting</th>
+                                    <th>In Progress</th>
+                                    <th>Completed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dept in departments %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-hospital me-2"></i>
+                                        {{ dept.name }}
+                                    </td>
+                                    <td><span class="badge bg-warning">{{ dept.waiting_count }}</span></td>
+                                    <td><span class="badge bg-info">{{ dept.in_progress }}</span></td>
+                                    <td><span class="badge bg-success">{{ dept.completed }}</span></td>
+                                    <td>
+                                        <a href="{% url 'patients:queue_display' dept.id %}" class="btn btn-sm btn-primary" target="_blank">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No departments available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/admin/patients/department/" class="btn btn-primary">
+                            <i class="bi bi-hospital me-2"></i>Manage Departments
+                        </a>
+                        <a href="/admin/doctors/doctor/" class="btn btn-info">
+                            <i class="bi bi-person-badge me-2"></i>Manage Doctors
+                        </a>
+                        <a href="/admin/patients/patient/" class="btn btn-success">
+                            <i class="bi bi-people me-2"></i>View Patients
+                        </a>
+                        <a href="/admin/patients/queue/" class="btn btn-warning">
+                            <i class="bi bi-list-ol me-2"></i>View Queue
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Info -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>System Info</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Total Departments:</strong> {{ total_departments }}</p>
+                    <p class="mb-2"><strong>Total Doctors:</strong> {{ total_doctors }}</p>
+                    <p class="mb-2"><strong>Total Patients:</strong> {{ total_patients }}</p>
+                    <p class="mb-0"><strong>System Status:</strong> <span class="badge bg-success">Active</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual QR Entry Modal -->
+<div class="modal fade" id="quickScannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-keyboard me-2"></i>
+                    Manual QR Code Entry
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Enter the QR code data manually if the camera scanner is not available.
+                </p>
+                <div class="mb-3">
+                    <label for="manualQrCode" class="form-label">QR Code Data:</label>
+                    <input type="text" class="form-control" id="manualQrCode" placeholder="e.g., SMARTQUEUE:BOOKING:123:abc123">
+                </div>
+                <div id="manualScanResult"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="processManualQrCode()">
+                    <i class="fas fa-check me-2"></i>
+                    Process QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Open quick scanner modal
+function openQuickScanner() {
+    const modal = new bootstrap.Modal(document.getElementById('quickScannerModal'));
+    document.getElementById('manualQrCode').value = '';
+    document.getElementById('manualScanResult').innerHTML = '';
+    modal.show();
+}
+
+// Process manual QR code entry
+function processManualQrCode() {
+    const qrCode = document.getElementById('manualQrCode').value.trim();
+    const resultDiv = document.getElementById('manualScanResult');
+    
+    if (!qrCode) {
+        resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a QR code</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info">Processing QR code...</div>';
+    
+    fetch('/patients/api/booking/qr-scan/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ qr_code: qrCode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6>✅ Patient Checked In Successfully!</h6>
+                    <p class="mb-2"><strong>Patient:</strong> ${data.patient_name}</p>
+                    <p class="mb-2"><strong>Token Number:</strong> ${data.token_number}</p>
+                    <p class="mb-2"><strong>Department:</strong> ${data.department}</p>
+                    <p class="mb-0"><strong>Queue Position:</strong> ${data.position}</p>
+                </div>
+            `;
+            // Auto-close modal after 3 seconds
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('quickScannerModal')).hide();
+                location.reload(); // Refresh dashboard to show updated stats
+            }, 3000);
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>❌ Error</h6>
+                    <p class="mb-0">${data.message}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6>❌ Network Error</h6>
+                <p class="mb-0">Failed to process QR code. Please try again.</p>
+            </div>
+        `;
+    });
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

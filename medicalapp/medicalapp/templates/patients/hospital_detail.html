@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ hospital.name }} - Hospital Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hospital Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h2 class="text-primary mb-3">{{ hospital.name }}</h2>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ hospital.address }}, {{ hospital.city }}, {{ hospital.state }} {{ hospital.zip_code }}
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-phone"></i>
+                                {{ hospital.phone }} | 
+                                <i class="fas fa-envelope"></i>
+                                {{ hospital.email }}
+                            </p>
+                            <div class="mb-3">
+                                <div class="rating d-inline-block me-3">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= hospital.rating|floatformat:0 %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-2">{{ hospital.rating }}/5 ({{ hospital.total_reviews }} reviews)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'patients:hospital_booking' hospital.id %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-plus"></i>
+                                Book Appointment
+                            </a>
+                            <div class="mt-2">
+                                <a href="{% url 'patients:portal_home' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i>
+                                    Back to Hospitals
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Hospital Information -->
+        <div class="col-lg-8">
+            <!-- About Hospital -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        About {{ hospital.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ hospital.description }}</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Hospital Details</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Established:</strong> {{ hospital.established_year }}</li>
+                                <li><strong>Total Beds:</strong> {{ hospital.total_beds }}</li>
+                                <li><strong>Operating Hours:</strong> 
+                                    {% if hospital.is_24_hours %}
+                                        24/7 Service
+                                    {% else %}
+                                        {{ hospital.opens_at }} - {{ hospital.closes_at }}
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Facilities Available</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    {% if hospital.emergency_services %}
+                                        <span class="badge bg-danger mb-1">Emergency Services</span><br>
+                                    {% endif %}
+                                    {% if hospital.has_parking %}
+                                        <span class="badge bg-success mb-1">Parking Available</span><br>
+                                    {% endif %}
+                                    {% if hospital.has_pharmacy %}
+                                        <span class="badge bg-primary mb-1">In-house Pharmacy</span><br>
+                                    {% endif %}
+                                </div>
+                                <div class="col-6">
+                                    {% if hospital.has_lab %}
+                                        <span class="badge bg-info mb-1">Laboratory Services</span><br>
+                                    {% endif %}
+                                    {% if hospital.has_ambulance %}
+                                        <span class="badge bg-warning mb-1">Ambulance Service</span><br>
+                                    {% endif %}
+                                    {% if hospital.is_24_hours %}
+                                        <span class="badge bg-success mb-1">24/7 Service</span><br>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospital Photo -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera"></i>
+                        Hospital Building
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if hospital.images.all %}
+                        <img src="{{ hospital.images.first.image.url }}" class="img-fluid w-100" alt="{{ hospital.name }} building" style="height: 300px; object-fit: cover;">
+                    {% else %}
+                        <div class="hospital-detail-photo" data-hospital-name="{{ hospital.name }}">
+                            <img class="img-fluid w-100" alt="{{ hospital.name }} building" style="height: 300px; object-fit: cover;" loading="lazy">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Departments -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-stethoscope"></i>
+                        Available Departments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if departments %}
+                        <div class="row">
+                            {% for department in departments %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-left-primary">
+                                    <div class="card-body">
+                                        <h6 class="text-primary">{{ department.name }}</h6>
+                                        <p class="text-muted small mb-2">{{ department.description }}</p>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <small class="text-success">
+                                                    <i class="fas fa-users"></i>
+                                                    {{ department.get_waiting_count }} waiting
+                                                </small>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <a href="{% url 'patients:hospital_booking' hospital.id %}?department={{ department.id }}" class="btn btn-sm btn-outline-primary">
+                                                    Book Now
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No departments available at this time.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Patient Reviews -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments"></i>
+                        Patient Reviews
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                        {% for review in reviews %}
+                        <div class="border-bottom mb-3 pb-3">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h6>{{ review.patient_name }}</h6>
+                                    <div class="rating">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-warning"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            <p class="mt-2 mb-0">{{ review.review_text }}</p>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center">
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                                View All Reviews
+                            </button>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No reviews available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'patients:hospital_booking' hospital.id %}" class="btn btn-primary">
+                            <i class="fas fa-calendar-plus"></i>
+                            Book Appointment
+                        </a>
+                        {% if hospital.emergency_services %}
+                        <button class="btn btn-danger" onclick="callEmergency()">
+                            <i class="fas fa-ambulance"></i>
+                            Emergency Services
+                        </button>
+                        {% endif %}
+                        <a href="tel:{{ hospital.phone }}" class="btn btn-outline-success">
+                            <i class="fas fa-phone"></i>
+                            Call Hospital
+                        </a>
+                        <button class="btn btn-outline-info" 
+                                onclick="getDirections()" 
+                                data-lat="{{ hospital.latitude|default:'' }}" 
+                                data-lng="{{ hospital.longitude|default:'' }}"
+                                data-address="{{ hospital.address }}, {{ hospital.city }}, {{ hospital.state }}">
+                            <i class="fas fa-directions"></i>
+                            Get Directions
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospital Stats -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar"></i>
+                        Hospital Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <h4 class="text-primary">{{ departments.count }}</h4>
+                            <small class="text-muted">Departments</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ hospital.total_beds }}</h4>
+                            <small class="text-muted">Total Beds</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <h4 class="text-warning">{{ hospital.rating }}</h4>
+                            <small class="text-muted">Rating</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info">{{ hospital.total_reviews }}</h4>
+                            <small class="text-muted">Reviews</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-address-card"></i>
+                        Contact Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <i class="fas fa-map-marker-alt text-danger"></i>
+                        <strong>Address:</strong><br>
+                        {{ hospital.address }}<br>
+                        {{ hospital.city }}, {{ hospital.state }} {{ hospital.zip_code }}
+                    </p>
+                    <p class="mb-2">
+                        <i class="fas fa-phone text-success"></i>
+                        <strong>Phone:</strong> {{ hospital.phone }}
+                    </p>
+                    <p class="mb-2">
+                        <i class="fas fa-envelope text-primary"></i>
+                        <strong>Email:</strong> {{ hospital.email }}
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-clock text-warning"></i>
+                        <strong>Hours:</strong> 
+                        {% if hospital.is_24_hours %}
+                            Open 24/7
+                        {% else %}
+                            {{ hospital.opens_at }} - {{ hospital.closes_at }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Hospital data for JavaScript functions
+function callEmergency() {
+    if (confirm('Do you want to call emergency services?')) {
+        window.open('tel:{{ hospital.phone }}', '_self');
+    }
+}
+
+function getDirections() {
+    // Get button element to read data attributes
+    const button = document.querySelector('[onclick="getDirections()"]');
+    const latitude = button.getAttribute('data-lat');
+    const longitude = button.getAttribute('data-lng');
+    const address = button.getAttribute('data-address');
+    
+    let mapsUrl;
+    if (latitude && longitude && latitude !== '' && longitude !== '') {
+        mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + latitude + ',' + longitude;
+    } else {
+        const encodedAddress = encodeURIComponent(address);
+        mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodedAddress;
+    }
+    window.open(mapsUrl, '_blank');
+}
+
+// Assign hospital building photo for detail page
+function assignHospitalDetailPhoto() {
+    const hospitalPhotoMap = {
+        'City General Hospital': 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&h=300&fit=crop&crop=center&auto=format&q=80',
+        'Metro Medical Center': 'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccf?w=800&h=300&fit=crop&crop=center&auto=format&q=80',
+        'Elite Healthcare': 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=800&h=300&fit=crop&crop=center&auto=format&q=80',
+        'Community Care Hospital': 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&h=300&fit=crop&crop=center&auto=format&q=80',
+        'Sunrise Specialty Hospital': 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&h=300&fit=crop&crop=center&auto=format&q=80'
+    };
+    
+    const photoContainer = document.querySelector('.hospital-detail-photo');
+    if (photoContainer) {
+        const hospitalName = photoContainer.getAttribute('data-hospital-name');
+        const img = photoContainer.querySelector('img');
+        
+        if (img && hospitalName) {
+            const photoUrl = hospitalPhotoMap[hospitalName] || 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&h=300&fit=crop&crop=center&auto=format&q=80';
+            
+            img.src = photoUrl;
+            img.alt = `${hospitalName} building`;
+            
+            // Add loading animation
+            img.style.opacity = '0';
+            img.onload = function() {
+                this.style.transition = 'opacity 0.3s ease-in-out';
+                this.style.opacity = '1';
+            };
+            
+            // Handle loading errors
+            img.onerror = function() {
+                this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                this.style.display = 'flex';
+                this.style.alignItems = 'center';
+                this.style.justifyContent = 'center';
+                this.style.color = 'white';
+                this.style.fontSize = '18px';
+                this.innerHTML = '<i class="fas fa-hospital-alt"></i>';
+            };
+        }
+    }
+}
+
+// Initialize photo when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    assignHospitalDetailPhoto();
+});
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 3px solid #007bff;
+}
+
+.card-body h6 {
+    margin-bottom: 0.5rem;
+}
+
+.rating {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}My Queue Position - CliniQ{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clock"></i>
+                        Your Queue Status
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="text-primary">{{ booking.department.name }} Department</h5>
+                    <p class="text-muted">{{ booking.created_at|date:"F d, Y" }}</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Current Position Card -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-primary">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h5 class="mb-0">Your Position</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="display-1 text-primary fw-bold">{{ queue_position }}</div>
+                            <p class="text-muted">in queue</p>
+                            {% if booking.status == 'called' %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-bell"></i>
+                                <strong>You're being called!</strong>
+                            </div>
+                            {% elif booking.status == 'completed' %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Consultation completed</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wait Time Card -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-header bg-info text-white text-center">
+                            <h5 class="mb-0">Estimated Wait</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if estimated_wait_minutes > 0 %}
+                            <div class="display-4 text-info fw-bold">{{ estimated_wait_minutes }}</div>
+                            <p class="text-muted">minutes</p>
+                            {% if estimated_wait_time %}
+                            <small class="text-muted">
+                                Expected around {{ estimated_wait_time|time:"g:i A" }}
+                            </small>
+                            {% endif %}
+                            {% else %}
+                            <div class="display-4 text-success fw-bold">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <p class="text-success">Your turn is coming up!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patients Ahead Card -->
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-header bg-warning text-dark text-center">
+                            <h5 class="mb-0">Patients Ahead</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="display-1 text-warning fw-bold">{{ patients_ahead }}</div>
+                            <p class="text-muted">waiting</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Token Being Served -->
+            {% if current_token %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-md"></i>
+                        Currently Being Served
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <h3 class="text-success">Token #{{ current_token.token_number }}</h3>
+                    <p class="text-muted">{{ current_token.patient.name }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Patient Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i>
+                        Your Booking Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Token Number:</strong> {{ booking.token_number }}</p>
+                            <p><strong>Patient Name:</strong> {{ booking.patient.name }}</p>
+                            <p><strong>Phone:</strong> {{ booking.patient.phone_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Department:</strong> {{ booking.department.name }}</p>
+                            <p><strong>Booking Time:</strong> {{ booking.created_at|time:"g:i A" }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge 
+                                    {% if booking.status == 'waiting' %}bg-warning
+                                    {% elif booking.status == 'called' %}bg-success
+                                    {% elif booking.status == 'completed' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card">
+                <div class="card-body text-center">
+                    <button class="btn btn-primary me-2" onclick="refreshQueue()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Status
+                    </button>
+                    <a href="{% url 'patients:portal_home' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-home"></i>
+                        Back to Portal
+                    </a>
+                    {% if booking.status == 'waiting' %}
+                    <button class="btn btn-outline-danger" onclick="confirmCancel()">
+                        <i class="fas fa-times"></i>
+                        Cancel Appointment
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh and notification system -->
+<script>
+let refreshInterval;
+
+function startAutoRefresh() {
+    // Refresh every 30 seconds
+    refreshInterval = setInterval(refreshQueue, 30000);
+}
+
+function refreshQueue() {
+    // Show loading indicator
+    const refreshBtn = document.querySelector('button[onclick="refreshQueue()"]');
+    const originalText = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    refreshBtn.disabled = true;
+    
+    // Reload the page to get updated queue status
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function confirmCancel() {
+    if (confirm('Are you sure you want to cancel your appointment?')) {
+        const cancelUrl = "{% url 'patients:api_booking_cancel' booking.id %}";
+        const portalUrl = "{% url 'patients:portal_home' %}";
+        
+        fetch(cancelUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Appointment cancelled successfully');
+                window.location.href = portalUrl;
+            } else {
+                alert('Failed to cancel appointment: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the appointment');
+        });
+    }
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+    
+    // Show notification if status changed
+    const bookingStatus = '{{ booking.status }}';
+    if (bookingStatus === 'called') {
+        if (Notification.permission === 'granted') {
+            new Notification('CliniQ - Your Turn!', {
+                body: 'You are being called for your appointment in {{ booking.department.name }}',
+                icon: '/static/img/logo.png'
+            });
+        }
+    }
+});
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Cleanup interval when page unloads
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+
+{% csrf_token %}
+{% endblock %}

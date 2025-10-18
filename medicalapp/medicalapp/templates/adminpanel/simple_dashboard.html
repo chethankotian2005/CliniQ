@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}Simple Admin Portal - CliniQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                CliniQ Admin Portal
+                            </h2>
+                            <p class="mb-0">Hospital Management & Patient Check-in System</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-light text-primary fs-6">
+                                <i class="fas fa-user-shield me-1"></i>
+                                Welcome, {{ user.username }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        QR Scanner
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted">Scan patient QR codes to check them in and assign tokens</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'adminpanel:qr_scanner' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-camera me-2"></i>
+                            Open QR Scanner
+                        </a>
+                        <button class="btn btn-outline-success" onclick="showQuickScan()">
+                            <i class="fas fa-keyboard me-2"></i>
+                            Manual Entry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-info">
+                <div class="card-header bg-info text-white text-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-hospital me-2"></i>
+                        Department Queues
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted">Monitor department queues and patient flow</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'patients:portal_home' %}" class="btn btn-info btn-lg">
+                            <i class="fas fa-eye me-2"></i>
+                            View Queues
+                        </a>
+                        <a href="/admin/" class="btn btn-outline-info" target="_blank">
+                            <i class="fas fa-cog me-2"></i>
+                            System Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Reports
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted">View statistics and daily reports</p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning btn-lg" onclick="showStats()">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Today's Stats
+                        </button>
+                        <a href="/admin/" class="btn btn-outline-warning" target="_blank">
+                            <i class="fas fa-database me-2"></i>
+                            Database
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Live Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h3 class="mb-1" id="total-today">0</h3>
+                                    <small>Patients Today</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h3 class="mb-1" id="total-checkins">0</h3>
+                                    <small>Check-ins Today</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h3 class="mb-1" id="currently-waiting">0</h3>
+                                    <small>Currently Waiting</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h3 class="mb-1" id="completed-today">0</h3>
+                                    <small>Completed Today</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body" id="recent-activity" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted text-center">Loading recent activity...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'adminpanel:logout' %}" class="btn btn-outline-danger me-3">
+                <i class="fas fa-sign-out-alt me-2"></i>
+                Logout
+            </a>
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="fas fa-home me-2"></i>
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Scan Modal -->
+<div class="modal fade" id="quickScanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-keyboard me-2"></i>
+                    Quick QR Entry
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="quickQrCode" class="form-label">QR Code Data:</label>
+                    <input type="text" class="form-control" id="quickQrCode" placeholder="SMARTQUEUE:BOOKING:123:abc123">
+                </div>
+                <div id="quickScanResult"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="processQuickScan()">
+                    <i class="fas fa-check me-2"></i>
+                    Process
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Modal -->
+<div class="modal fade" id="statsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Today's Statistics
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statsContent">
+                <div class="text-center">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading statistics...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadRecentActivity();
+    setInterval(loadStats, 30000); // Update every 30 seconds
+    setInterval(loadRecentActivity, 60000); // Update every minute
+});
+
+// Load statistics
+function loadStats() {
+    fetch('/patients/api/dashboard-stats/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('total-checkins').textContent = data.total_checkins || 0;
+            document.getElementById('currently-waiting').textContent = data.current_waiting || 0;
+            document.getElementById('total-today').textContent = data.total_checkins || 0;
+            document.getElementById('completed-today').textContent = data.completed_today || 0;
+        }
+    })
+    .catch(error => console.error('Failed to load stats:', error));
+}
+
+// Load recent activity
+function loadRecentActivity() {
+    const activities = [
+        { time: new Date().toLocaleTimeString(), text: 'System monitoring active', type: 'info' },
+        { time: new Date(Date.now() - 300000).toLocaleTimeString(), text: 'QR Scanner ready', type: 'success' },
+        { time: new Date(Date.now() - 600000).toLocaleTimeString(), text: 'Admin portal accessed', type: 'primary' }
+    ];
+    
+    const activityDiv = document.getElementById('recent-activity');
+    activityDiv.innerHTML = activities.map(activity => `
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+            <span class="text-${activity.type}">${activity.text}</span>
+            <small class="text-muted">${activity.time}</small>
+        </div>
+    `).join('');
+}
+
+// Show quick scan modal
+function showQuickScan() {
+    const modal = new bootstrap.Modal(document.getElementById('quickScanModal'));
+    document.getElementById('quickQrCode').value = '';
+    document.getElementById('quickScanResult').innerHTML = '';
+    modal.show();
+}
+
+// Process quick scan
+function processQuickScan() {
+    const qrCode = document.getElementById('quickQrCode').value.trim();
+    const resultDiv = document.getElementById('quickScanResult');
+    
+    if (!qrCode) {
+        resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a QR code</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info">Processing...</div>';
+    
+    fetch('/patients/api/booking/qr-scan/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ qr_code: qrCode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6>✅ Patient Checked In!</h6>
+                    <p class="mb-1"><strong>Token:</strong> ${data.token_number}</p>
+                    <p class="mb-0"><strong>Patient:</strong> ${data.patient_name}</p>
+                </div>
+            `;
+            loadStats(); // Refresh stats
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('quickScanModal')).hide();
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '<div class="alert alert-danger">❌ Network error</div>';
+    });
+}
+
+// Show stats modal
+function showStats() {
+    const modal = new bootstrap.Modal(document.getElementById('statsModal'));
+    modal.show();
+    
+    // Load detailed stats
+    setTimeout(() => {
+        document.getElementById('statsContent').innerHTML = `
+            <div class="row text-center">
+                <div class="col-md-6 mb-3">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h3 class="text-primary">${document.getElementById('total-checkins').textContent}</h3>
+                            <p class="mb-0">Total Check-ins Today</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h3 class="text-warning">${document.getElementById('currently-waiting').textContent}</h3>
+                            <p class="mb-0">Currently Waiting</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <strong>System Status:</strong> All systems operational<br>
+                <strong>Last Updated:</strong> ${new Date().toLocaleString()}
+            </div>
+        `;
+    }, 500);
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.badge {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,399 @@
+<!-- Portal Modals and Popups -->
+
+<!-- Queue Status Modal -->
+<div class="modal fade" id="queueModal" tabindex="-1" aria-labelledby="queueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="queueModalLabel">
+                    <i class="fas fa-clock me-2"></i>Check Queue Status
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label for="queuePhone" class="form-label fw-bold">Enter Phone Number</label>
+                    <input type="tel" class="form-control form-control-lg" id="queuePhone" placeholder="+91 98765 43210" style="border-radius: 10px;">
+                </div>
+                <div id="queueResult" class="mt-3" style="display: none;">
+                    <!-- Queue result will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Cancel</button>
+                <button type="button" class="btn btn-modern btn-gradient-primary" onclick="checkQueue()">
+                    <i class="fas fa-search me-2"></i>Check Status
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lab Test Details Modal -->
+<div class="modal fade" id="testDetailsModal" tabindex="-1" aria-labelledby="testDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background: var(--success-gradient); color: white; border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="testDetailsModalLabel">
+                    <i class="fas fa-flask me-2"></i>Test Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="testDetailsContent">
+                <!-- Test details loaded dynamically -->
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Close</button>
+                <button type="button" class="btn btn-modern btn-gradient-success" onclick="proceedToBooking()">
+                    <i class="fas fa-calendar-check me-2"></i>Book This Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Confirmation Modal -->
+<div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-body p-5 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-3">Booking Confirmed!</h3>
+                <p class="text-muted mb-4" id="bookingMessage">Your appointment has been successfully booked.</p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-modern btn-gradient-primary" onclick="viewBookingDetails()">
+                        <i class="fas fa-eye me-2"></i>View Details
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background: var(--danger-gradient); color: white; border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="cancelModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Cancellation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p>Are you sure you want to cancel this appointment/order?</p>
+                <p class="text-muted small mb-0">This action cannot be undone.</p>
+                <input type="hidden" id="cancelOrderId" value="">
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">No, Keep It</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancellation()" style="border-radius: 10px;">
+                    <i class="fas fa-times me-2"></i>Yes, Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background: var(--info-gradient); color: white; border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="rescheduleModalLabel">
+                    <i class="fas fa-calendar-alt me-2"></i>Reschedule Appointment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label for="rescheduleDate" class="form-label fw-bold">New Date</label>
+                    <input type="date" class="form-control" id="rescheduleDate" style="border-radius: 10px;">
+                </div>
+                <div class="mb-3">
+                    <label for="rescheduleTime" class="form-label fw-bold">New Time</label>
+                    <input type="time" class="form-control" id="rescheduleTime" style="border-radius: 10px;">
+                </div>
+                <input type="hidden" id="rescheduleOrderId" value="">
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Cancel</button>
+                <button type="button" class="btn btn-modern btn-gradient-info" onclick="confirmReschedule()">
+                    <i class="fas fa-check me-2"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lab Result Detail Modal -->
+<div class="modal fade" id="resultDetailModal" tabindex="-1" aria-labelledby="resultDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="resultDetailLabel">
+                    <i class="fas fa-file-medical me-2"></i>Lab Result Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="resultDetailContent">
+                <!-- Result details loaded dynamically -->
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Close</button>
+                <button type="button" class="btn btn-modern btn-gradient-primary" onclick="downloadResult()">
+                    <i class="fas fa-download me-2"></i>Download PDF
+                </button>
+                <button type="button" class="btn btn-modern btn-gradient-info" onclick="shareResult()">
+                    <i class="fas fa-share me-2"></i>Share
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="text-center">
+        <div class="loading-spinner"></div>
+        <p class="text-white mt-3 fw-bold">Loading...</p>
+    </div>
+</div>
+
+<!-- Toast Notifications Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="successToastMessage">Success!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span id="errorToastMessage">Error!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <div id="infoToast" class="toast align-items-center text-white bg-info border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-info-circle me-2"></i>
+                <span id="infoToastMessage">Info</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toast notification functions
+function showToast(type, message) {
+    const toastEl = document.getElementById(type + 'Toast');
+    const messageEl = document.getElementById(type + 'ToastMessage');
+    messageEl.textContent = message;
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
+function showSuccess(message) {
+    showToast('success', message);
+}
+
+function showError(message) {
+    showToast('error', message);
+}
+
+function showInfo(message) {
+    showToast('info', message);
+}
+
+// Loading overlay functions
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Queue status check
+function checkQueue() {
+    const phone = document.getElementById('queuePhone').value;
+    if (!phone) {
+        showError('Please enter a phone number');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch(`/patients/api/check-patient/?phone=${phone}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayQueueResult(data);
+            } else {
+                showError(data.message || 'No queue found for this number');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showError('Failed to check queue status');
+            console.error('Error:', error);
+        });
+}
+
+function displayQueueResult(data) {
+    const resultDiv = document.getElementById('queueResult');
+    resultDiv.innerHTML = `
+        <div class="alert alert-success">
+            <h5><i class="fas fa-user me-2"></i>${data.patient_name}</h5>
+            <p class="mb-1"><strong>Token:</strong> ${data.token_number}</p>
+            <p class="mb-1"><strong>Department:</strong> ${data.department}</p>
+            <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary">${data.status}</span></p>
+            <p class="mb-0"><strong>Position:</strong> ${data.position} in queue</p>
+        </div>
+    `;
+    resultDiv.style.display = 'block';
+}
+
+// Lab booking functions
+function proceedToBooking() {
+    // Navigate to booking page or show booking form
+    showInfo('Redirecting to booking page...');
+}
+
+function viewBookingDetails() {
+    // Navigate to booking details
+    showInfo('Loading booking details...');
+}
+
+// Cancellation
+function cancelOrder(orderId) {
+    document.getElementById('cancelOrderId').value = orderId;
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    modal.show();
+}
+
+function confirmCancellation() {
+    const orderId = document.getElementById('cancelOrderId').value;
+    
+    showLoading();
+    
+    fetch(`/patients/api/labs/order/${orderId}/cancel/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
+        modal.hide();
+        
+        if (data.success) {
+            showSuccess('Order cancelled successfully');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError(data.message || 'Failed to cancel order');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('An error occurred');
+        console.error('Error:', error);
+    });
+}
+
+// Rescheduling
+function rescheduleOrder(orderId) {
+    document.getElementById('rescheduleOrderId').value = orderId;
+    const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+    modal.show();
+}
+
+function confirmReschedule() {
+    const orderId = document.getElementById('rescheduleOrderId').value;
+    const newDate = document.getElementById('rescheduleDate').value;
+    const newTime = document.getElementById('rescheduleTime').value;
+    
+    if (!newDate || !newTime) {
+        showError('Please select both date and time');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch(`/patients/api/labs/order/${orderId}/reschedule/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            scheduled_date: newDate,
+            scheduled_time: newTime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('rescheduleModal'));
+        modal.hide();
+        
+        if (data.success) {
+            showSuccess('Appointment rescheduled successfully');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError(data.message || 'Failed to reschedule');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('An error occurred');
+        console.error('Error:', error);
+    });
+}
+
+// Download result
+function downloadResult() {
+    showInfo('Preparing download...');
+    // Implementation for PDF download
+}
+
+// Share result
+function shareResult() {
+    showInfo('Share functionality coming soon');
+}
+
+// Utility function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>

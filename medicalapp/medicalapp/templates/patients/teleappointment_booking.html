@@ -1,0 +1,722 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Book Teleappointment - CLINIQ{% endblock %}
+
+{% block head %}
+<style>
+    .tele-booking-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .hero-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .hero-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .appointment-type-selector {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .appointment-type-btn {
+        padding: 1rem 2rem;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        transition: all var(--transition);
+        text-decoration: none;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .appointment-type-btn:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.5);
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    .appointment-type-btn.active {
+        background: rgba(255,255,255,0.3);
+        border-color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    .form-section {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 2rem;
+        border: 1px solid var(--gray-200);
+    }
+    
+    .form-section h3 {
+        color: var(--gray-800);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+        transition: all var(--transition);
+        font-size: 1rem;
+        background: var(--gray-50);
+        width: 100%;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+        background: white;
+        transform: translateY(-1px);
+        outline: none;
+    }
+    
+    .required {
+        color: var(--danger-color);
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: var(--radius-lg);
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all var(--transition);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-xl);
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    }
+    
+    .btn-submit:disabled {
+        opacity: 0.7;
+        transform: none;
+        cursor: not-allowed;
+    }
+    
+    .time-slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .time-slot {
+        background: white;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition);
+    }
+    
+    .time-slot:hover:not(.unavailable) {
+        border-color: var(--primary-color);
+        background: var(--gray-50);
+        transform: translateY(-2px);
+    }
+    
+    .time-slot.selected {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .time-slot.unavailable {
+        background: var(--gray-100);
+        color: var(--gray-400);
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    
+    .floating-help {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-xl);
+        cursor: pointer;
+        transition: all var(--transition);
+        z-index: 1000;
+    }
+    
+    .floating-help:hover {
+        transform: translateY(-5px) scale(1.1);
+        background: var(--primary-dark);
+    }
+    
+    @media (max-width: 768px) {
+        .tele-booking-container {
+            margin: 1rem auto;
+        }
+        
+        .hero-header {
+            padding: 2rem 1rem;
+        }
+        
+        .hero-header h1 {
+            font-size: 2rem;
+        }
+        
+        .appointment-type-selector {
+            flex-direction: column;
+        }
+        
+        .form-section {
+            padding: 1.5rem;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .floating-help {
+            bottom: 1rem;
+            right: 1rem;
+            width: 50px;
+            height: 50px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tele-booking-container">
+    <!-- Hero Header -->
+    <div class="hero-header">
+        <h1><i class="fas fa-video"></i> Book Teleappointment</h1>
+        <p>Experience convenient healthcare from the comfort of your home with our secure video consultation platform</p>
+        <div class="appointment-type-selector">
+            <a href="{% url 'patients:hospital_booking' 'fb074dfc-7b56-454b-a76b-9c059d753a31' %}" class="appointment-type-btn">
+                <i class="fas fa-hospital"></i> In-Person Visit
+            </a>
+            <span class="appointment-type-btn active">
+                <i class="fas fa-video"></i> Video Consultation
+            </span>
+        </div>
+    </div>
+
+    <!-- Requirements Section -->
+    <div class="form-section">
+        <h3><i class="fas fa-clipboard-check text-primary"></i> Video Consultation Requirements</h3>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-success fs-4"><i class="fas fa-wifi"></i></div>
+                    <div>
+                        <strong>Stable Internet Connection</strong>
+                        <div class="text-muted">Minimum 1 Mbps for clear video quality</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-success fs-4"><i class="fas fa-camera"></i></div>
+                    <div>
+                        <strong>Camera & Microphone</strong>
+                        <div class="text-muted">Built-in or external camera and microphone</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-success fs-4"><i class="fas fa-globe"></i></div>
+                    <div>
+                        <strong>Modern Web Browser</strong>
+                        <div class="text-muted">Chrome, Firefox, Safari, or Edge</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-success fs-4"><i class="fas fa-user-shield"></i></div>
+                    <div>
+                        <strong>Private Environment</strong>
+                        <div class="text-muted">Quiet, private space for consultation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert-container"></div>
+
+    <form id="teleappointmentForm">
+        <!-- Patient Information -->
+        <div class="form-section">
+            <h3><i class="fas fa-user text-primary"></i> Patient Information</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        Full Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" class="form-control" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        Phone Number <span class="required">*</span>
+                    </label>
+                    <input type="tel" id="phone" name="phone" class="form-control" required placeholder="+1 (555) 123-4567">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    <input type="email" id="email" name="email" class="form-control" required placeholder="your.email@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="age" class="form-label">
+                        Age <span class="required">*</span>
+                    </label>
+                    <input type="number" id="age" name="age" class="form-control" required min="1" max="120" placeholder="25">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="address" class="form-label">
+                    Address
+                </label>
+                <textarea id="address" name="address" class="form-control" rows="3" placeholder="Your full address (optional)"></textarea>
+            </div>
+        </div>
+
+        <!-- Department Selection -->
+        <div class="form-section">
+            <h3><i class="fas fa-hospital text-primary"></i> Department & Doctor Selection</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="department_id" class="form-label">
+                        Select Department <span class="required">*</span>
+                    </label>
+                    <select id="department_id" name="department_id" class="form-select" required>
+                        <option value="">Choose a department...</option>
+                        {% for department in departments %}
+                            <option value="{{ department.id }}">{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="doctor_id" class="form-label">
+                        Preferred Doctor
+                    </label>
+                    <select id="doctor_id" name="doctor_id" class="form-select">
+                        <option value="">Any available doctor</option>
+                    </select>
+                    <small class="text-muted">Leave blank to be assigned the next available doctor</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date and Time Selection -->
+        <div class="form-section">
+            <h3><i class="fas fa-calendar-alt text-primary"></i> Schedule Your Appointment</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="appointment_date" class="form-label">
+                        Select Date <span class="required">*</span>
+                    </label>
+                    <input type="date" id="appointment_date" name="appointment_date" class="form-control" required>
+                    <small class="text-muted">Available dates are shown from today onwards</small>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    Select Time Slot <span class="required">*</span>
+                </label>
+                <div class="loading text-center py-4" id="slots-loading" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading available time slots...</div>
+                </div>
+                <div class="time-slots" id="time-slots">
+                    <div class="text-muted text-center py-4">
+                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                        <div>Select a date to view available time slots</div>
+                    </div>
+                </div>
+                <input type="hidden" id="appointment_time" name="appointment_time" required>
+            </div>
+        </div>
+
+        <!-- Platform Selection -->
+        <div class="form-section">
+            <h3><i class="fas fa-video text-primary"></i> Video Platform Preference</h3>
+            <div class="form-group">
+                <label for="platform" class="form-label">
+                    Choose Video Platform
+                </label>
+                <select id="platform" name="platform" class="form-select">
+                    <option value="webrtc" selected>🌐 Browser-based Video Call (Recommended)</option>
+                    <option value="zoom">📹 Zoom Meeting</option>
+                    <option value="google_meet">📱 Google Meet</option>
+                    <option value="microsoft_teams">💼 Microsoft Teams</option>
+                </select>
+                <div class="alert alert-info mt-2">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Recommended:</strong> Browser-based calls work directly in your web browser without installing any software. Simply click the join link when it's time for your appointment.
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="form-section">
+            <h3><i class="fas fa-notes-medical text-primary"></i> Medical Information</h3>
+            <div class="form-group">
+                <label for="notes" class="form-label">
+                    Reason for Visit / Symptoms
+                </label>
+                <textarea id="notes" name="notes" class="form-control" rows="4" 
+                          placeholder="Please describe your symptoms, concerns, or reason for consultation. This helps the doctor prepare for your appointment."></textarea>
+                <small class="text-muted">Optional but recommended for better preparation</small>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button type="submit" class="btn-submit" id="submit-btn">
+                <i class="fas fa-video me-2"></i>
+                Book Teleappointment
+            </button>
+        </div>
+    </form>
+    
+    <!-- Floating Help Button -->
+    <div class="floating-help" id="helpButton" title="Need Help?">
+        <i class="fas fa-question"></i>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">✅ Teleappointment Booked Successfully!</h5>
+            </div>
+            <div class="modal-body">
+                <div id="booking-details">
+                    <!-- Booking details will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{% url 'patients:portal_home' %}" class="btn btn-primary">
+                    Continue
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle text-primary me-2"></i>
+                    Need Help Booking?
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h6><i class="fas fa-user me-2"></i>Patient Information</h6>
+                    <p>Please provide accurate information. We'll use your email and phone number to send appointment confirmations and reminders.</p>
+                </div>
+                <div class="help-section">
+                    <h6><i class="fas fa-hospital me-2"></i>Department Selection</h6>
+                    <p>Choose the medical department that best matches your health concern. If unsure, select "General Medicine" or contact us.</p>
+                </div>
+                <div class="help-section">
+                    <h6><i class="fas fa-calendar me-2"></i>Scheduling</h6>
+                    <p>Available time slots are shown in your local time zone. Green slots are available, gray slots are unavailable.</p>
+                </div>
+                <div class="help-section">
+                    <h6><i class="fas fa-video me-2"></i>Video Platform</h6>
+                    <p>We recommend browser-based calls for the easiest experience. No software installation required!</p>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-phone me-2"></i>
+                    <strong>Need immediate help?</strong> Call us at <a href="tel:+15551234567">+1 (555) 123-4567</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('teleappointmentForm');
+    const departmentSelect = document.getElementById('department_id');
+    const doctorSelect = document.getElementById('doctor_id');
+    const dateInput = document.getElementById('appointment_date');
+    const timeSlotsContainer = document.getElementById('time-slots');
+    const appointmentTimeInput = document.getElementById('appointment_time');
+    const submitBtn = document.getElementById('submit-btn');
+    const alertContainer = document.getElementById('alert-container');
+    const helpButton = document.getElementById('helpButton');
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+
+    // Help button functionality
+    helpButton.addEventListener('click', function() {
+        const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+        helpModal.show();
+    });
+
+    // Load doctors when department changes
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        doctorSelect.innerHTML = '<option value="">Any Available Doctor</option>';
+        
+        if (departmentId) {
+            fetch(`/patients/api/department/${departmentId}/doctors/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.doctors.forEach(doctor => {
+                            const option = document.createElement('option');
+                            option.value = doctor.id;
+                            option.textContent = `Dr. ${doctor.name} - ${doctor.specialization}`;
+                            doctorSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading doctors:', error));
+        }
+        
+        // Clear time slots when department changes
+        timeSlotsContainer.innerHTML = '';
+        appointmentTimeInput.value = '';
+        loadTimeSlots();
+    });
+
+    // Load time slots when date changes
+    dateInput.addEventListener('change', loadTimeSlots);
+
+    function loadTimeSlots() {
+        const departmentId = departmentSelect.value;
+        const selectedDate = dateInput.value;
+        
+        if (!departmentId || !selectedDate) {
+            timeSlotsContainer.innerHTML = '';
+            return;
+        }
+
+        document.getElementById('slots-loading').style.display = 'block';
+        timeSlotsContainer.innerHTML = '';
+
+        fetch(`/patients/api/teleappointment/slots/${departmentId}/?date=${selectedDate}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('slots-loading').style.display = 'none';
+                
+                if (data.success && data.slots && data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        const slotElement = document.createElement('div');
+                        slotElement.className = 'time-slot';
+                        slotElement.textContent = slot.time;
+                        slotElement.addEventListener('click', function() {
+                            // Remove selection from other slots
+                            document.querySelectorAll('.time-slot').forEach(s => 
+                                s.classList.remove('selected'));
+                            
+                            // Select this slot
+                            this.classList.add('selected');
+                            appointmentTimeInput.value = slot.time;
+                        });
+                        timeSlotsContainer.appendChild(slotElement);
+                    });
+                } else {
+                    timeSlotsContainer.innerHTML = '<p class="text-center py-4">No available slots for this date. Please select another date.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('slots-loading').style.display = 'none';
+                console.error('Error loading time slots:', error);
+                showAlert('Error loading time slots. Please try again.', 'danger');
+            });
+    }
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!appointmentTimeInput.value) {
+            showAlert('Please select a time slot.', 'danger');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Booking...';
+
+        fetch('/patients/api/teleappointment/book/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showBookingSuccess(data);
+            } else {
+                showAlert('Booking failed: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred. Please try again.', 'danger');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Book Teleappointment';
+        });
+    });
+
+    function showAlert(message, type) {
+        const alertClass = type === 'danger' ? 'alert-danger' : 'alert-success';
+        alertContainer.innerHTML = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+
+    function showBookingSuccess(data) {
+        const bookingDetails = document.getElementById('booking-details');
+        bookingDetails.innerHTML = `
+            <div class="text-center">
+                <h4>🎉 Your teleappointment has been confirmed!</h4>
+                <div class="mt-3">
+                    <p><strong>Patient:</strong> ${data.patient_name}</p>
+                    <p><strong>Department:</strong> ${data.department}</p>
+                    <p><strong>Doctor:</strong> ${data.doctor}</p>
+                    <p><strong>Date & Time:</strong> ${new Date(data.scheduled_time).toLocaleString()}</p>
+                    <p><strong>Meeting ID:</strong> ${data.meeting_id}</p>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <strong>📱 What's Next?</strong><br>
+                    • You'll receive an SMS with your video call link<br>
+                    • Join the call 5 minutes before your appointment<br>
+                    • Ensure stable internet and quiet environment<br>
+                    • Keep your medical records ready
+                </div>
+                <div class="mt-3">
+                    <a href="${data.meeting_url}" class="btn btn-success" target="_blank">
+                        📹 Join Video Call (Available 15 min before appointment)
+                    </a>
+                </div>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('successModal')).show();
+    }
+});
+</script>
+
+{% endblock %}

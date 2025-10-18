@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}QR Code Scanner - Reception{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-qrcode"></i>
+                        QR Code Scanner - Reception
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="scanner-container">
+                                <div id="reader" style="width: 100%;"></div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <button id="start-scan" class="btn btn-success me-2">
+                                    <i class="fas fa-camera"></i> Start Scanner
+                                </button>
+                                <button id="stop-scan" class="btn btn-danger me-2" disabled>
+                                    <i class="fas fa-stop"></i> Stop Scanner
+                                </button>
+                                <button id="manual-entry" class="btn btn-warning">
+                                    <i class="fas fa-keyboard"></i> Manual Entry
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="scan-status">
+                                <div id="scan-result" class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Ready to scan QR codes. Click "Start Scanner" to begin.
+                                </div>
+                            </div>
+                            
+                            <!-- Manual Entry Form -->
+                            <div id="manual-form" class="card border-warning" style="display: none;">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">Manual QR Code Entry</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="manualEntryForm">
+                                        <div class="form-group mb-3">
+                                            <label for="qr-code-input" class="form-label">QR Code Data:</label>
+                                            <input type="text" class="form-control" id="qr-code-input" placeholder="Paste or type QR code data here...">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-check"></i> Process
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="hideManualForm()">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patient Information Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i>
+                        Patient Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="patient-info">
+                        <p class="text-muted">
+                            <i class="fas fa-hand-point-left"></i>
+                            Scan a QR code to see patient details
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Scans -->
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Recent Scans
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="recent-scans">
+                        <p class="text-muted small">No recent scans</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle"></i>
+                    Patient Checked In Successfully!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="success-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continue Scanning</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Scan Error
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="error-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let html5QrcodeScanner = null;
+let isScanning = false;
+
+// Initialize scanner
+function initializeScanner() {
+    html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true
+        }
+    );
+}
+
+// Start scanning
+function startScanning() {
+    if (!html5QrcodeScanner) {
+        initializeScanner();
+    }
+    
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    isScanning = true;
+    
+    document.getElementById('start-scan').disabled = true;
+    document.getElementById('stop-scan').disabled = false;
+    
+    updateScanStatus('info', 'Scanner started. Please show QR code to camera.');
+}
+
+// Stop scanning
+function stopScanning() {
+    if (html5QrcodeScanner && isScanning) {
+        html5QrcodeScanner.clear();
+        isScanning = false;
+        
+        document.getElementById('start-scan').disabled = false;
+        document.getElementById('stop-scan').disabled = true;
+        
+        updateScanStatus('warning', 'Scanner stopped.');
+    }
+}
+
+// Scan success callback
+function onScanSuccess(decodedText, decodedResult) {
+    console.log(`Code matched = ${decodedText}`, decodedResult);
+    
+    // Stop scanning temporarily
+    if (isScanning) {
+        stopScanning();
+    }
+    
+    // Process the QR code
+    processQRCode(decodedText);
+}
+
+// Scan error callback
+function onScanError(error) {
+    // This is called frequently, so we don't log every error
+    console.warn(`Code scan error = ${error}`);
+}
+
+// Process QR code data
+function processQRCode(qrData) {
+    updateScanStatus('info', 'Processing QR code...');
+    
+    fetch('/patients/api/booking/qr-scan/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qr_code: qrData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data);
+            addToRecentScans(data, true);
+        } else {
+            showError(data.message);
+            addToRecentScans({ message: data.message, qr_code: qrData }, false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error occurred while processing QR code.');
+    });
+}
+
+// Update scan status
+function updateScanStatus(type, message) {
+    const statusDiv = document.getElementById('scan-result');
+    statusDiv.className = `alert alert-${type}`;
+    statusDiv.innerHTML = `<i class="fas fa-${type === 'info' ? 'info-circle' : type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}`;
+}
+
+// Show success modal
+function showSuccess(data) {
+    const successDetails = document.getElementById('success-details');
+    successDetails.innerHTML = `
+        <div class="text-center">
+            <h4 class="text-success">Token Number: ${data.token_number}</h4>
+            <hr>
+            <p><strong>Patient:</strong> ${data.patient_name}</p>
+            <p><strong>Department:</strong> ${data.department}</p>
+            <p><strong>Position in Queue:</strong> ${data.position}</p>
+            <p><strong>Estimated Wait Time:</strong> ${data.estimated_wait_time} minutes</p>
+            <p><strong>Status:</strong> <span class="badge bg-success">${data.status}</span></p>
+        </div>
+    `;
+    
+    updatePatientInfo(data);
+    updateScanStatus('success', `Patient checked in successfully! Token: ${data.token_number}`);
+    
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    successModal.show();
+}
+
+// Show error modal
+function showError(message) {
+    const errorDetails = document.getElementById('error-details');
+    errorDetails.innerHTML = `<p class="text-danger">${message}</p>`;
+    
+    updateScanStatus('danger', message);
+    
+    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    errorModal.show();
+}
+
+// Update patient info panel
+function updatePatientInfo(data) {
+    const patientInfo = document.getElementById('patient-info');
+    patientInfo.innerHTML = `
+        <div class="text-center">
+            <h5 class="text-primary">Token ${data.token_number}</h5>
+            <hr>
+            <p><strong>Name:</strong> ${data.patient_name}</p>
+            <p><strong>Department:</strong> ${data.department}</p>
+            <p><strong>Status:</strong> <span class="badge bg-success">${data.status}</span></p>
+            <p><strong>Queue Position:</strong> ${data.position}</p>
+            <p><strong>Wait Time:</strong> ~${data.estimated_wait_time} min</p>
+            <small class="text-muted">Checked in at ${new Date().toLocaleTimeString()}</small>
+        </div>
+    `;
+}
+
+// Add to recent scans
+function addToRecentScans(data, success) {
+    const recentScans = document.getElementById('recent-scans');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const scanEntry = document.createElement('div');
+    scanEntry.className = `border-bottom pb-2 mb-2 ${success ? 'text-success' : 'text-danger'}`;
+    scanEntry.innerHTML = `
+        <small>
+            <strong>${timestamp}</strong><br>
+            ${success ? `✓ ${data.patient_name} - Token ${data.token_number}` : `✗ ${data.message}`}
+        </small>
+    `;
+    
+    if (recentScans.firstChild.textContent.includes('No recent scans')) {
+        recentScans.innerHTML = '';
+    }
+    
+    recentScans.insertBefore(scanEntry, recentScans.firstChild);
+    
+    // Keep only last 5 scans
+    while (recentScans.children.length > 5) {
+        recentScans.removeChild(recentScans.lastChild);
+    }
+}
+
+// Manual entry functions
+function showManualForm() {
+    document.getElementById('manual-form').style.display = 'block';
+    document.getElementById('qr-code-input').focus();
+}
+
+function hideManualForm() {
+    document.getElementById('manual-form').style.display = 'none';
+    document.getElementById('qr-code-input').value = '';
+}
+
+// Event listeners
+document.getElementById('start-scan').addEventListener('click', startScanning);
+document.getElementById('stop-scan').addEventListener('click', stopScanning);
+document.getElementById('manual-entry').addEventListener('click', showManualForm);
+
+document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const qrData = document.getElementById('qr-code-input').value.trim();
+    if (qrData) {
+        processQRCode(qrData);
+        hideManualForm();
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-start scanner if camera permission is available
+    setTimeout(() => {
+        startScanning();
+    }, 1000);
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (isScanning) {
+        stopScanning();
+    }
+});
+</script>
+
+<style>
+.scanner-container {
+    border: 2px dashed #007bff;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8f9fa;
+}
+
+#reader {
+    min-height: 300px;
+}
+
+.recent-scans .border-bottom:last-child {
+    border-bottom: none !important;
+}
+
+@media (max-width: 768px) {
+    .col-md-8, .col-md-4 {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
