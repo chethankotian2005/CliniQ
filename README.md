@@ -43,6 +43,52 @@ A comprehensive Django-based medical queue management system that provides real-
 - **Frontend**: Bootstrap 5 + JavaScript
 - **API**: Django REST Framework
 
+## Deploy to Vercel
+
+This repository is now configured for Vercel serverless deployment from the repository root.
+
+### 1. Import Project
+
+- Push this repository to GitHub.
+- In Vercel, click **Add New Project** and import the repository.
+- Keep the root directory as the repository root.
+
+### 2. Configure Environment Variables in Vercel
+
+Set these variables in Vercel Project Settings:
+
+- `SECRET_KEY`
+- `DEBUG=False`
+- `ALLOWED_HOSTS=.vercel.app,your-app.vercel.app`
+- `CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app`
+- `CORS_ALLOWED_ORIGINS=https://your-app.vercel.app`
+- `DATABASE_URL` (required for production; use PostgreSQL)
+
+Optional variables (if you use these features):
+
+- `GEMINI_API_KEY`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_PHONE_NUMBER`
+
+### 3. Deploy
+
+- Trigger deployment from Vercel.
+- Static files are collected during the build using `collectstatic`.
+
+### 4. Run Migrations
+
+After first deployment, run migrations against your production database:
+
+```bash
+python medicalapp/medicalapp/manage.py migrate
+```
+
+### Important Notes
+
+- SQLite is not suitable for production on Vercel. Use `DATABASE_URL` with PostgreSQL.
+- WebSocket workers (Channels realtime sockets) are not supported in Vercel serverless functions. Standard HTTP views and REST APIs are supported.
+
 ## Installation & Setup
 
 ### Prerequisites

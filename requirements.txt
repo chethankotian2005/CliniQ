@@ -1,0 +1,11 @@
+Django==5.2.7
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
+channels==4.2.2
+whitenoise==6.9.0
+python-dotenv==1.1.1
+dj-database-url==2.2.0
+firebase-admin==7.1.0
+twilio==9.2.4
+qrcode==8.2
+Pillow==11.3.0

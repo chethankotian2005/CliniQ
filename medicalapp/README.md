@@ -157,6 +157,25 @@ medicalapp/
 
 ## Deployment
 
+### Vercel Deployment (Recommended)
+
+This repository is configured to deploy from the repository root with a Django serverless entrypoint.
+
+1. Import the repository into Vercel.
+2. Keep the root directory as the repository root.
+3. Set these environment variables in Vercel:
+   - `SECRET_KEY`
+   - `DEBUG=False`
+   - `ALLOWED_HOSTS=.vercel.app,your-app.vercel.app`
+   - `CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app`
+   - `CORS_ALLOWED_ORIGINS=https://your-app.vercel.app`
+   - `DATABASE_URL=postgresql://...` (required for production)
+4. Deploy.
+
+Important:
+- SQLite is for local development only. Use PostgreSQL in Vercel via `DATABASE_URL`.
+- WebSocket workers are not supported in Vercel serverless functions.
+
 ### Environment Variables for Production
 
 ```env
