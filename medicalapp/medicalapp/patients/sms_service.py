@@ -24,8 +24,12 @@ def format_booking_date(date_obj):
 
 
 def is_sms_enabled():
-    """Check if SMS is enabled - simple check for now"""
-    return True
+    """Check if SMS credentials are configured."""
+    return bool(
+        getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+        and getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+        and getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+    )
 
 
 class SMSService:
@@ -37,13 +41,24 @@ class SMSService:
         self.auth_token = settings.TWILIO_AUTH_TOKEN
         self.from_phone = settings.TWILIO_PHONE_NUMBER
         
-        # Initialize Twilio client
-        self.client = Client(self.account_sid, self.auth_token)
+        self.client = None
+
+        if is_sms_enabled():
+            try:
+                self.client = Client(self.account_sid, self.auth_token)
+            except Exception as exc:
+                logger.warning(f"Twilio client init failed; SMS disabled for this request: {exc}")
+
+    def _sms_unavailable(self):
+        return {
+            'success': False,
+            'error': 'SMS service is not configured. Booking created without SMS notification.'
+        }
     
     def send_booking_confirmation_sms(self, booking):
         """Send SMS confirmation when appointment is booked"""
-        if not is_sms_enabled():
-            return {'success': False, 'error': 'SMS service disabled'}
+        if not self.client:
+            return self._sms_unavailable()
             
         try:
             # Format booking date and time
@@ -113,6 +128,9 @@ Thank you for choosing CliniQ."""
     
     def send_arrival_notification_sms(self, booking):
         """Send SMS when patient arrives and gets token number"""
+        if not self.client:
+            return self._sms_unavailable()
+
         try:
             message_body = f"""CliniQ Medical Center
 
@@ -153,6 +171,9 @@ Thank you for your patience."""
     
     def send_doctor_call_notification_sms(self, booking):
         """Send SMS when doctor calls the patient"""
+        if not self.client:
+            return self._sms_unavailable()
+
         try:
             message_body = f"""🩺 YOUR TURN NOW!
 
@@ -190,6 +211,9 @@ Department: {booking.department.name}
     
     def send_appointment_reminder_sms(self, booking):
         """Send SMS reminder before appointment (can be scheduled via Celery)"""
+        if not self.client:
+            return self._sms_unavailable()
+
         try:
             # Format booking date and time
             booking_date = format_booking_date(booking.booking_date)
@@ -236,6 +260,9 @@ Booking ID: #{booking.id}
     
     def send_cancellation_sms(self, booking):
         """Send SMS when appointment is cancelled"""
+        if not self.client:
+            return self._sms_unavailable()
+
         try:
             # Format booking date
             formatted_date = format_booking_date(booking.booking_date)
