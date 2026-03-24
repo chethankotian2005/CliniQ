@@ -6,29 +6,45 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.db.utils import DatabaseError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 import json
 from geopy.distance import geodesic
+import logging
 
 from .hospital_models import Hospital, HospitalReview, HospitalImage
 from .models import Department
 from .chatbot_service import MedicalChatbotService
 
+logger = logging.getLogger(__name__)
+
 def patient_portal_home(request):
     """Patient portal homepage with hospital selection"""
-    # Get all active hospitals
-    hospitals = Hospital.objects.filter(is_active=True).prefetch_related('images', 'departments')
-    
-    # Add sample data if no hospitals exist
-    if not hospitals.exists():
-        create_sample_hospitals()
+    try:
+        # Get all active hospitals
         hospitals = Hospital.objects.filter(is_active=True).prefetch_related('images', 'departments')
-    
-    return render(request, 'patients/portal_home.html', {
-        'hospitals': hospitals
-    })
+
+        # Add sample data if no hospitals exist
+        if not hospitals.exists():
+            create_sample_hospitals()
+            hospitals = Hospital.objects.filter(is_active=True).prefetch_related('images', 'departments')
+
+        return render(request, 'patients/portal_home.html', {
+            'hospitals': hospitals
+        })
+    except DatabaseError as exc:
+        # Avoid crashing the portal page when production DB/migrations are not ready.
+        logger.exception("Portal load failed due to database error: %s", exc)
+        return render(request, 'patients/portal_home.html', {
+            'hospitals': []
+        })
+    except Exception as exc:
+        logger.exception("Portal load failed unexpectedly: %s", exc)
+        return render(request, 'patients/portal_home.html', {
+            'hospitals': []
+        })
 
 def hospital_detail(request, hospital_id):
     """Hospital detail page with departments and booking"""
