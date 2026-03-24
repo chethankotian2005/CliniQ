@@ -120,10 +120,14 @@ if dj_database_url and database_url:
         )
     }
 else:
+    sqlite_name = BASE_DIR / 'db.sqlite3'
+    if os.getenv('VERCEL'):
+        sqlite_name = Path('/tmp') / 'cliniq.sqlite3'
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': sqlite_name,
         }
     }
 
