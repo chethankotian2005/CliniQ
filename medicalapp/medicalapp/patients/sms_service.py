@@ -28,7 +28,10 @@ def is_sms_enabled():
     return bool(
         getattr(settings, 'TWILIO_ACCOUNT_SID', None)
         and getattr(settings, 'TWILIO_AUTH_TOKEN', None)
-        and getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+        and (
+            getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+            or getattr(settings, 'TWILIO_MESSAGING_SERVICE_SID', None)
+        )
     )
 
 
@@ -40,6 +43,7 @@ class SMSService:
         self.account_sid = settings.TWILIO_ACCOUNT_SID
         self.auth_token = settings.TWILIO_AUTH_TOKEN
         self.from_phone = settings.TWILIO_PHONE_NUMBER
+        self.messaging_service_sid = getattr(settings, 'TWILIO_MESSAGING_SERVICE_SID', None)
         
         self.client = None
 
@@ -54,6 +58,17 @@ class SMSService:
             'success': False,
             'error': 'SMS service is not configured. Booking created without SMS notification.'
         }
+
+    def _build_message_kwargs(self, to_number, message_body):
+        kwargs = {
+            'body': message_body,
+            'to': to_number,
+        }
+        if self.messaging_service_sid:
+            kwargs['messaging_service_sid'] = self.messaging_service_sid
+        else:
+            kwargs['from_'] = self.from_phone
+        return kwargs
     
     def send_booking_confirmation_sms(self, booking):
         """Send SMS confirmation when appointment is booked"""
@@ -89,9 +104,7 @@ Thank you for choosing CliniQ."""
 
             # Send SMS
             message = self.client.messages.create(
-                from_=self.from_phone,
-                body=message_body,
-                to=booking.patient.phone_number
+                **self._build_message_kwargs(booking.patient.phone_number, message_body)
             )
             
             # Log detailed information for debugging
@@ -104,7 +117,7 @@ Thank you for choosing CliniQ."""
             # Print debug info to console as well
             print(f"📱 SMS Debug Info:")
             print(f"   To: {booking.patient.phone_number}")
-            print(f"   From: {self.from_phone}")
+            print(f"   From: {self.from_phone if self.from_phone else 'Messaging Service'}")
             print(f"   SID: {message.sid}")
             print(f"   Status: {message.status}")
             print(f"   Error Code: {message.error_code}")
@@ -150,9 +163,7 @@ Thank you for your patience."""
 
             # Send SMS
             message = self.client.messages.create(
-                from_=self.from_phone,
-                body=message_body,
-                to=booking.patient.phone_number
+                **self._build_message_kwargs(booking.patient.phone_number, message_body)
             )
             
             logger.info(f"Arrival notification SMS sent to {booking.patient.phone_number}, SID: {message.sid}")
@@ -190,9 +201,7 @@ Department: {booking.department.name}
 
             # Send SMS
             message = self.client.messages.create(
-                from_=self.from_phone,
-                body=message_body,
-                to=booking.patient.phone_number
+                **self._build_message_kwargs(booking.patient.phone_number, message_body)
             )
             
             logger.info(f"Doctor call notification SMS sent to {booking.patient.phone_number}, SID: {message.sid}")
@@ -239,9 +248,7 @@ Booking ID: #{booking.id}
 
             # Send SMS
             message = self.client.messages.create(
-                from_=self.from_phone,
-                body=message_body,
-                to=booking.patient.phone_number
+                **self._build_message_kwargs(booking.patient.phone_number, message_body)
             )
             
             logger.info(f"Appointment reminder SMS sent to {booking.patient.phone_number}, SID: {message.sid}")
@@ -286,9 +293,7 @@ Need help? Contact hospital directly.
 
             # Send SMS
             message = self.client.messages.create(
-                from_=self.from_phone,
-                body=message_body,
-                to=booking.patient.phone_number
+                **self._build_message_kwargs(booking.patient.phone_number, message_body)
             )
             
             logger.info(f"Cancellation SMS sent to {booking.patient.phone_number}, SID: {message.sid}")
