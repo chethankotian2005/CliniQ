@@ -3,7 +3,8 @@ Booking Views - Online booking and QR scanning
 """
 
 from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.db.utils import DatabaseError
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -11,12 +12,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 import json
+import logging
 from datetime import datetime, timedelta
 from django.utils import timezone
 
 from .models import Patient, Department, Queue
 from .booking_service import BookingService
 from doctors.models import Doctor
+
+logger = logging.getLogger(__name__)
 
 
 class OnlineBookingView(View):
@@ -187,10 +191,24 @@ def get_department_doctors(request, department_id):
 
 def online_booking_page(request):
     """Online booking page template"""
-    departments = Department.objects.filter(is_active=True)
-    return render(request, 'patients/booking.html', {
-        'departments': departments
-    })
+    try:
+        departments = Department.objects.filter(is_active=True)
+        if not departments.exists():
+            from .portal_views import create_sample_hospitals
+            create_sample_hospitals()
+            departments = Department.objects.filter(is_active=True)
+
+        return render(request, 'patients/booking.html', {
+            'departments': departments
+        })
+    except DatabaseError as exc:
+        logger.exception("Booking page DB error: %s", exc)
+        return render(request, 'patients/booking.html', {
+            'departments': []
+        })
+    except Exception as exc:
+        logger.exception("Booking page render error: %s", exc)
+        return HttpResponse("Booking page is temporarily unavailable. Please retry in a moment.", status=503)
 
 def hospital_booking_page(request, hospital_id):
     """Hospital-specific booking page"""

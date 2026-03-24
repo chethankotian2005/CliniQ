@@ -68,6 +68,9 @@ def get_nearby_hospitals(request):
         user_lng = float(data.get('longitude', 0))
         
         hospitals = Hospital.objects.filter(is_active=True)
+        if not hospitals.exists():
+            create_sample_hospitals()
+            hospitals = Hospital.objects.filter(is_active=True)
         hospital_data = []
         
         for hospital in hospitals:
