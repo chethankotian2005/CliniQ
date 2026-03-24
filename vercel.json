@@ -12,5 +12,5 @@
       "dest": "api/index.py"
     }
   ],
-  "buildCommand": "python medicalapp/medicalapp/manage.py collectstatic --noinput"
+  "buildCommand": "python medicalapp/medicalapp/manage.py migrate --noinput ; python medicalapp/medicalapp/manage.py collectstatic --noinput"
 }
