@@ -108,12 +108,15 @@ ASGI_APPLICATION = 'smartqueue.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if dj_database_url:
+database_url = os.getenv('DATABASE_URL', '').strip()
+
+if dj_database_url and database_url:
+    requires_ssl = database_url.startswith('postgres://') or database_url.startswith('postgresql://')
     DATABASES = {
         'default': dj_database_url.config(
-            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            default=database_url,
             conn_max_age=600,
-            ssl_require=not DEBUG,
+            ssl_require=requires_ssl,
         )
     }
 else:
