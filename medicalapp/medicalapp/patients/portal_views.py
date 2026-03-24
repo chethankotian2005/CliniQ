@@ -282,8 +282,15 @@ def create_sample_hospitals():
             'total_reviews': 723
         }
     ]
+
+    def normalize_phone(raw_phone):
+        cleaned = ''.join(ch for ch in str(raw_phone) if ch.isdigit())
+        if str(raw_phone).strip().startswith('+'):
+            return ('+' + cleaned)[:15]
+        return cleaned[:15]
     
     for hospital_data in sample_hospitals:
+        hospital_data['phone'] = normalize_phone(hospital_data.get('phone', ''))
         hospital, created = Hospital.objects.get_or_create(
             name=hospital_data['name'],
             defaults=hospital_data
