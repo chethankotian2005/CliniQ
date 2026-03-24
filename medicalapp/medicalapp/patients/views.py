@@ -17,6 +17,13 @@ def get_departments(request):
     try:
         # Fetch active departments and dedupe by (id) to avoid accidental duplicates
         departments = Department.objects.filter(is_active=True).order_by('id')
+
+        if not departments.exists():
+            # Bootstrap demo data in fresh deployments.
+            from .portal_views import create_sample_hospitals
+            create_sample_hospitals()
+            departments = Department.objects.filter(is_active=True).order_by('id')
+
         department_list = []
         seen = set()
 

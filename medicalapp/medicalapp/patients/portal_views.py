@@ -108,6 +108,7 @@ class ChatbotView(View):
         return super().dispatch(request, *args, **kwargs)
     
     def post(self, request):
+        user_message = ''
         try:
             data = json.loads(request.body)
             user_message = data.get('message', '').strip()
